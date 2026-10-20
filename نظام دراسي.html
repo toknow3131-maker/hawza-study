@@ -1,0 +1,3231 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>منظومة التحصيل والمباحثة الحوزوية - 2100 OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- مكتبات Firebase السحابية -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Tajawal', 'sans-serif'] }
+                }
+            }
+        };
+    </script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        html, body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #070b14;
+            color: #f8fafc;
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+            width: 100% !important;
+            margin: 0;
+            padding: 0;
+            touch-action: pan-y;
+        }
+        .mobile-shell {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 55%, #050811 100%);
+            position: relative;
+            padding-bottom: 96px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.85);
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(99, 102, 241, 0.24);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        .glass-pill {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+        .neon-border {
+            border: 1px solid rgba(99, 102, 241, 0.55);
+            box-shadow: 0 0 18px rgba(99, 102, 241, 0.25);
+        }
+        .today-glow {
+            border: 1.5px solid #38bdf8 !important;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.38) !important;
+        }
+        .comp-glow {
+            border: 1.5px solid #f59e0b !important;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.35) !important;
+        }
+        .google-picker-sheet {
+            background-color: #f1f5f9;
+            color: #1f2937;
+            max-width: 440px;
+            width: 100%;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+        }
+        .account-row {
+            background: #ffffff;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+        .account-row:active {
+            background: #f1f5f9;
+            transform: scale(0.99);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .circle-bg { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 3.8; stroke-linecap: round; transition: stroke-dasharray 0.6s ease; }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.65; transform: scale(0.96); }
+        }
+        .pulse-badge { animation: pulseGlow 2.2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- 1. شاشة اختيار الحسابات وتسجيل الدخول -->
+    <div id="authScreen" class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-4 bg-[#070b14] relative z-50">
+        <div class="google-picker-sheet flex flex-col max-h-[92vh]">
+            <div class="flex items-center justify-between px-5 py-3.5 bg-[#e2e8f0]/90 border-b border-slate-300">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full p-0.5 bg-gradient-to-tr from-blue-600 via-emerald-500 to-amber-500">
+                        <div class="w-full h-full rounded-full bg-teal-600 flex items-center justify-center text-white text-sm">🌺</div>
+                    </div>
+                    <span id="pickerActiveTopEmail" class="text-xs sm:text-sm font-bold text-slate-800 tracking-tight" dir="ltr">toknow3131@gmail.com</span>
+                </div>
+                <button type="button" onclick="enterAsGuest()" title="تخطي للدخول السريع" class="w-8 h-8 rounded-full hover:bg-slate-300/60 flex items-center justify-center text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-3 overflow-y-auto space-y-1.5 flex-1" id="accountsListWrapper"></div>
+
+            <div class="p-3 bg-white border-t border-slate-200 space-y-2">
+                <div id="addNewAccountForm" class="hidden bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2 text-right">
+                    <div class="text-xs font-black text-slate-800 mb-1">إضافة حساب بريد إلكتروني للمزامنة:</div>
+                    <input type="text" id="customAccName" placeholder="الاسم (مثال: علي عقيل العبادي)" class="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 outline-none">
+                    <input type="email" id="customAccEmail" placeholder="البريد الإلكتروني (example@gmail.com)" dir="ltr" class="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 outline-none text-left">
+                    <input type="password" id="customAccPass" placeholder="كلمة المرور (اختياري)" class="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 outline-none">
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" onclick="toggleAddAccountForm(false)" class="px-3 py-1.5 text-xs font-bold text-slate-500">إلغاء</button>
+                        <button type="button" onclick="saveAndLoginCustomAccount()" class="px-4 py-1.5 text-xs font-black bg-blue-600 text-white rounded-xl shadow">حفظ ودخول سحابي</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="toggleAddAccountForm(true)" class="py-2.5 px-3 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-user-plus text-blue-600"></i>
+                        <span>إضافة بريد آخر</span>
+                    </button>
+                    <button type="button" onclick="triggerGoogleAccountChooser()" class="py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs flex items-center justify-center gap-1.5">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-4 h-4" alt="G">
+                        <span>مزامنة Google</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. واجهة التطبيق الرئيسية الشاملة -->
+    <div id="mainApp" class="mobile-shell" style="display: none;">
+
+        <!-- الشريط العلوي الثابت -->
+        <header class="sticky top-0 z-40 bg-[#090d16]/95 backdrop-blur-xl border-b border-indigo-500/20 px-3.5 py-2.5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/30">
+                        <i class="fa-solid fa-feather-pointed text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-sm font-black text-white leading-tight">مُنجز المباحث</h1>
+                        <div class="flex items-center gap-1.5">
+                            <span id="syncIndicator" class="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> محفوظ وجاهز
+                            </span>
+                            <span id="activeEmailHeaderBadge" class="text-[9.5px] text-slate-400 font-bold truncate max-w-[115px]" dir="ltr"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="openExportModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black text-white bg-gradient-to-r from-rose-600 to-pink-600 rounded-xl shadow-md shadow-rose-600/25 border border-rose-400/30">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>تقرير A4</span>
+                    </button>
+                    <button type="button" onclick="openAccountSwitcher()" title="تبديل الحساب" class="flex items-center gap-1 p-0.5 rounded-full border-2 border-cyan-400/60 shadow-sm">
+                        <div id="headerAvatarBadge" class="w-7 h-7 rounded-full bg-teal-600 text-white font-black text-xs flex items-center justify-center">🌺</div>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- المحتوى الداخلي للقوائم الخمس -->
+        <main class="px-3.5 pt-3 space-y-4">
+
+            <!-- 1. الرئيسية -->
+            <section id="view-home" class="space-y-4">
+                <div class="glass-card rounded-3xl p-4 relative overflow-hidden neon-border">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span id="homeTodayBadge" class="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 pulse-badge">
+                                <i class="fa-solid fa-bolt text-[9px]"></i> اليوم المحدد
+                            </span>
+                            <h2 id="homeDayTitle" class="text-xl font-black text-white mt-1.5">...</h2>
+                            <p id="homeDateSubtitle" class="text-[11px] text-indigo-200 font-bold mt-0.5">...</p>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div class="relative w-16 h-16 flex items-center justify-center">
+                                <svg viewBox="0 0 36 36" class="w-16 h-16 -rotate-90">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="homeDayCircle" class="circle stroke-cyan-400" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <span id="homeDayScore" class="absolute text-xs font-black text-white">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80 text-center">
+                        <div class="glass-pill rounded-2xl p-2">
+                            <span class="text-[10px] text-slate-400 block font-bold">إنجاز الأسبوع</span>
+                            <strong id="homeWeekScore" class="text-xs font-black text-violet-300">0%</strong>
+                        </div>
+                        <div class="glass-pill rounded-2xl p-2">
+                            <span class="text-[10px] text-slate-400 block font-bold">المواد الفعالة</span>
+                            <strong id="homeActiveBooksCount" class="text-xs font-black text-emerald-300">4 مواد</strong>
+                        </div>
+                        <button type="button" onclick="jumpToTodayInWeeks()" class="rounded-2xl p-2 bg-indigo-600/30 border border-indigo-400/40 text-indigo-200 font-black text-[11px] flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-crosshairs"></i>
+                            <span>تحديد اليوم</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <span class="text-xs font-black text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-regular fa-calendar-check text-cyan-400"></i> أيام الأسبوع الحالي
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-bold">اضغط على أي يوم لفتحه</span>
+                    </div>
+                    <div id="homeDaysStrip" class="flex overflow-x-auto no-scrollbar gap-2 pb-1"></div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between px-1">
+                        <span class="text-xs font-black text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-layer-group text-indigo-400"></i> موجز مواد اليوم والتعويضات
+                        </span>
+                        <button type="button" onclick="openAddSubjectModal()" class="text-[11px] font-black text-cyan-300 bg-cyan-500/15 border border-cyan-400/30 px-2.5 py-1 rounded-xl">
+                            + إضافة مادة
+                        </button>
+                    </div>
+                    <div id="homeSubjectsOverview" class="space-y-2.5"></div>
+                </div>
+            </section>
+
+            <!-- 2. الأسابيع والمواد -->
+            <section id="view-weeks" class="hidden space-y-3.5">
+                <div class="glass-card rounded-2xl p-3 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-black text-indigo-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-timeline text-cyan-400"></i> شريط الأسابيع الدراسية
+                        </span>
+                        <button type="button" onclick="addNewWeek()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[10px] font-black shadow">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>أسبوع جديد وأرشفة</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="weekSelector" onchange="changeActiveWeek(this.value)" class="flex-1 bg-slate-900/90 border border-slate-700 text-white text-xs font-bold rounded-xl px-3 py-2.5 outline-none focus:border-cyan-400">
+                        </select>
+                        <button type="button" onclick="jumpToTodayInWeeks()" class="px-3 py-2.5 rounded-xl glass-pill text-cyan-300 text-xs font-black border border-cyan-500/30">
+                            اليوم
+                        </button>
+                    </div>
+                </div>
+
+                <div id="daysTabsContainer" class="flex overflow-x-auto no-scrollbar gap-2 pb-1"></div>
+
+                <div class="glass-pill rounded-2xl px-3.5 py-2.5 flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 id="currentDayName" class="text-sm font-black text-white">مهام اليوم</h3>
+                            <span id="todayActivePill" class="hidden text-[9px] font-black px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">اليوم</span>
+                            <span id="holidayPill" class="hidden text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">عطلة</span>
+                        </div>
+                        <div class="text-[10px] font-bold text-slate-400 mt-0.5">
+                            <span id="currentDayHijri">...</span> • <span id="currentDayGregorian">...</span>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1.5 rounded-xl cursor-pointer">
+                        <input type="checkbox" id="dayHolidayToggle" onchange="toggleDayHoliday(this.checked)" class="w-3.5 h-3.5 accent-amber-500 rounded">
+                        <span>عطلة رسمية</span>
+                    </label>
+                </div>
+
+                <div class="glass-card rounded-2xl p-3 space-y-2.5 neon-border">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-black text-cyan-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-book-open-reader"></i> شريط اختيار وإضافة المواد
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="openAddSubjectModal()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>إضافة مادة</span>
+                            </button>
+                            <button type="button" onclick="editBookNamesModal()" class="inline-flex items-center gap-1 px-2 py-1 rounded-xl glass-pill text-slate-300 text-[10px] font-bold">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span>ضبط الكل</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <select id="subjectSelectorBar" onchange="selectActiveSubject(this.value)" class="w-full bg-slate-900/95 border border-indigo-500/40 text-white text-xs font-black rounded-xl px-3 py-2.5 outline-none focus:border-cyan-400">
+                    </select>
+
+                    <div id="subjectQuickPills" class="flex overflow-x-auto no-scrollbar gap-1.5 pt-0.5"></div>
+                </div>
+
+                <div id="singleBookContainer"></div>
+            </section>
+
+            <!-- 3. سجل مراحل الترسيخ -->
+            <section id="view-retention" class="hidden space-y-3.5">
+                <div class="glass-card rounded-2xl p-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-purple-600/30 border border-purple-400/40 text-purple-300 flex items-center justify-center">
+                                <i class="fa-solid fa-brain"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-white">سجل مراحل الترسيخ</h3>
+                                <p class="text-[10px] text-slate-400 font-bold">متابعة مراحل ترسيخ المادة المختارة</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <select id="retentionSubjectSelector" onchange="selectRetentionSubject(this.value)" class="w-full bg-slate-900/95 border border-purple-500/40 text-white text-xs font-black rounded-xl px-3 py-2.5 outline-none">
+                    </select>
+                </div>
+
+                <div id="retentionSingleBookContainer"></div>
+            </section>
+
+            <!-- 4. الجدول اليومي بالساعات (قائمة رابعة مستقلة) -->
+            <section id="view-schedule" class="hidden space-y-3.5">
+                <div class="glass-card rounded-2xl p-3.5 space-y-3 neon-border">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-white" id="scheduleDayHeaderTitle">الجدول اليومي بالساعات</h3>
+                                <p class="text-[10px] text-slate-400 font-bold">تنظيم فترات اليوم مع التقييم من 100% وإشارة الإنجاز</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addNewScheduleRow()" class="px-3 py-1.5 text-xs font-black bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 rounded-xl flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                            <span>إضافة فترة</span>
+                        </button>
+                    </div>
+
+                    <div id="scheduleDaysStrip" class="flex overflow-x-auto no-scrollbar gap-2 pt-1"></div>
+                </div>
+
+                <div id="scheduleRowsContainer" class="space-y-2.5"></div>
+            </section>
+
+            <!-- 5. لوحة الإحصاء التراكمي -->
+            <section id="view-stats" class="hidden space-y-4">
+                <div class="glass-card rounded-3xl p-4 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 flex items-center justify-center">
+                                <i class="fa-solid fa-chart-pie"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-white">لوحة الإحصاء التراكمي 2100</h3>
+                                <p class="text-[10px] text-slate-400 font-bold">قياس دقيق للمستوى اليومي والأسبوعي والمطلق</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2.5">
+                        <div class="glass-pill p-3 rounded-2xl text-center flex flex-col items-center">
+                            <span class="text-[10px] font-bold text-slate-400 mb-1.5">اليوم</span>
+                            <div class="relative w-12 h-12 flex items-center justify-center">
+                                <svg viewBox="0 0 36 36" class="w-12 h-12 -rotate-90">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="svgStatDaily" class="circle stroke-cyan-400" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <span id="statDaily" class="absolute text-[11px] font-black text-white">0%</span>
+                            </div>
+                        </div>
+                        <div class="glass-pill p-3 rounded-2xl text-center flex flex-col items-center">
+                            <span class="text-[10px] font-bold text-slate-400 mb-1.5">الأسبوع</span>
+                            <div class="relative w-12 h-12 flex items-center justify-center">
+                                <svg viewBox="0 0 36 36" class="w-12 h-12 -rotate-90">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="svgStatWeekly" class="circle stroke-violet-400" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <span id="statWeekly" class="absolute text-[11px] font-black text-white">0%</span>
+                            </div>
+                        </div>
+                        <div class="glass-pill p-3 rounded-2xl text-center flex flex-col items-center">
+                            <span class="text-[10px] font-bold text-slate-400 mb-1.5">الشهر</span>
+                            <div class="relative w-12 h-12 flex items-center justify-center">
+                                <svg viewBox="0 0 36 36" class="w-12 h-12 -rotate-90">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="svgStatMonthly" class="circle stroke-sky-400" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <span id="statMonthly" class="absolute text-[11px] font-black text-white">0%</span>
+                            </div>
+                        </div>
+                        <div class="glass-pill p-3 rounded-2xl text-center flex flex-col items-center">
+                            <span class="text-[10px] font-bold text-slate-400 mb-1.5">السنة</span>
+                            <div class="relative w-12 h-12 flex items-center justify-center">
+                                <svg viewBox="0 0 36 36" class="w-12 h-12 -rotate-90">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="svgStatYearly" class="circle stroke-amber-400" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <span id="statYearly" class="absolute text-[11px] font-black text-white">0%</span>
+                            </div>
+                        </div>
+                        <div class="col-span-2 bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-2xl flex items-center justify-around">
+                            <div class="text-right">
+                                <span class="text-xs font-black text-emerald-300 block">المطلق التراكمي</span>
+                                <span class="text-[10px] text-slate-400">معدل التحصيل العام</span>
+                            </div>
+                            <div class="relative w-12 h-12 flex items-center justify-center">
+                                <svg viewBox="0 0 36 36" class="w-12 h-12 -rotate-90">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="svgStatAbsolute" class="circle stroke-emerald-400" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <span id="statAbsolute" class="absolute text-[11px] font-black text-emerald-300">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <h4 class="text-xs font-black text-indigo-300 mb-2.5">تفصيل المواد جزءاً وكلاً:</h4>
+                        <div id="booksDetailedStatsContainer" class="space-y-2.5"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-3xl p-4 space-y-3">
+                    <h4 class="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-box-archive"></i> الأرشيف الدائم للأسابيع السابقة
+                    </h4>
+                    <div id="archiveListContainer" class="space-y-2"></div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- شريط التنقل السفلي الثابت (5 قوائم) -->
+        <nav class="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto bg-[#090d16]/95 backdrop-blur-2xl border-t border-indigo-500/25 px-1.5 py-1.5">
+            <div class="grid grid-cols-5 gap-1">
+                <button type="button" id="nav-home" onclick="switchMainTab('home')" class="flex flex-col items-center justify-center py-2 rounded-2xl text-cyan-400 bg-indigo-950/60 border border-cyan-400/30 transition">
+                    <i class="fa-solid fa-house-signal text-sm"></i>
+                    <span class="text-[9px] font-black mt-1">الرئيسية</span>
+                </button>
+                <button type="button" id="nav-weeks" onclick="switchMainTab('weeks')" class="flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-calendar-week text-sm"></i>
+                    <span class="text-[9px] font-black mt-1">الأسابيع</span>
+                </button>
+                <button type="button" id="nav-retention" onclick="switchMainTab('retention')" class="flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-brain text-sm"></i>
+                    <span class="text-[9px] font-black mt-1">الترسيخ</span>
+                </button>
+                <button type="button" id="nav-schedule" onclick="switchMainTab('schedule')" class="flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-clock text-sm"></i>
+                    <span class="text-[9px] font-black mt-1">الجدول</span>
+                </button>
+                <button type="button" id="nav-stats" onclick="switchMainTab('stats')" class="flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-chart-pie text-sm"></i>
+                    <span class="text-[9px] font-black mt-1">الإحصاء</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- نافذة تقييم الأسئلة الديناميكية -->
+    <div id="dynamicRubricModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+        <div class="glass-card rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-3.5 neon-border bg-[#0f172a] text-white border border-indigo-500/30 max-h-[92vh] overflow-y-auto no-scrollbar">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm border border-cyan-400/30">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div>
+                        <h3 id="rubricModalTaskTitle" class="text-xs sm:text-sm font-black text-white">معايير التقييم</h3>
+                        <p id="rubricModalBookTitle" class="text-[10px] text-slate-400 font-bold">المادة: ...</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeDynamicRubricModal()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="bg-gradient-to-r from-indigo-950/80 to-slate-900 border border-indigo-500/40 p-3 rounded-2xl flex items-center justify-between">
+                <div class="text-right">
+                    <span class="text-[10px] font-bold text-slate-400 block">الدرجة المحسوبة تلقائياً:</span>
+                    <span id="rubricPerQuestionWeight" class="text-[10.5px] text-cyan-300 font-bold">المجموع محسوب على إجمالي الأسئلة</span>
+                </div>
+                <div class="text-xl sm:text-2xl font-black text-cyan-400 bg-slate-950 px-3 py-1 rounded-xl border border-cyan-500/30">
+                    <span id="rubricLiveScoreDisplay">0</span>%
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 p-2.5 rounded-2xl border border-cyan-500/30 space-y-2">
+                <span class="text-[10.5px] font-black text-cyan-300 flex items-center gap-1">
+                    <i class="fa-solid fa-plus-circle text-xs"></i> إضافة سؤال أو معيار لهذا الواجب:
+                </span>
+                <div class="flex gap-2">
+                    <input type="text" id="newRubricQuestionInput" placeholder="اكتب السؤال هنا..." class="flex-1 text-xs font-bold p-2 rounded-xl bg-slate-950 border border-slate-700 text-white outline-none focus:border-cyan-400">
+                    <button type="button" onclick="addNewQuestionToActiveRubric()" class="px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-md shrink-0">
+                        + إضافة
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-2 text-right text-xs" id="dynamicQuestionsContainer"></div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeDynamicRubricModal()" class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white">إلغاء</button>
+                <button type="button" onclick="applyDynamicRubricScore()" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 text-slate-950 font-black text-xs rounded-xl shadow-lg">
+                    اعتماد وتثبيت الدرجة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة واجب دراسي إضافي للمادة -->
+    <div id="addTaskModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-card rounded-3xl max-w-sm w-full p-5 space-y-4 neon-border bg-[#0f172a] text-white">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-plus text-cyan-400"></i> إضافة واجب إضافي للمادة
+                </h3>
+                <button type="button" onclick="closeAddTaskModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">اسم الواجب الدراسي الجديد:</label>
+                    <input id="newCustomTaskLabel" type="text" placeholder="مثلاً: حفظ المتن، مطالعة الحاشية..." class="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-cyan-400">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">الدرجة المخصصة له (من 100):</label>
+                    <input id="newCustomTaskDefaultScore" type="number" min="0" max="100" value="100" class="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 font-black outline-none focus:border-cyan-400">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeAddTaskModal()" class="px-4 py-2 text-xs text-slate-400 font-bold">إلغاء</button>
+                <button type="button" onclick="confirmAddCustomTask()" class="px-5 py-2 text-xs bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black shadow-lg">تثبيت وإضافة الواجب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة منظومة التعويض الذكية والمتطورة الشاملة -->
+    <div id="smartCompensationModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+        <div class="glass-card rounded-3xl max-w-lg w-full p-4 sm:p-5 space-y-4 comp-glow bg-[#0f172a] text-white max-h-[92vh] overflow-y-auto no-scrollbar">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm border border-amber-400/30">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-amber-300">منظومة التعويض والاستدراك الشاملة</h3>
+                        <p id="compModalHeaderSub" class="text-[10px] text-slate-400 font-bold">المادة: ...</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSmartCompModal()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- إضافة تعويض حر لأي نقص -->
+            <div class="bg-slate-900/90 border border-cyan-500/30 p-3 rounded-2xl space-y-2">
+                <span class="text-[11px] font-black text-cyan-300 flex items-center gap-1">
+                    <i class="fa-solid fa-plus-circle text-xs"></i> إضافة التزام تعويضي مخصص (لأي عجز أو نقص):
+                </span>
+                <div class="space-y-2">
+                    <input type="text" id="newManualCompTitle" placeholder="عنوان التعويض (مثلاً: تعويض حفظ 5 أبيات، تعويض نقص مباحثة)..." class="w-full text-xs font-bold p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-cyan-400">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="newManualCompTarget" placeholder="المقدار المطلوب لقضائه..." class="text-xs font-bold p-2 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-cyan-400">
+                        <button type="button" onclick="addNewManualCompensation()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow">
+                            + تثبيت بند التعويض
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قائمة بنود التعويض للمادة الحالية -->
+            <div class="space-y-2.5" id="compItemsListContainer"></div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold">الحفظ والمزامنة تتم فورياً تلقائياً</span>
+                <button type="button" onclick="closeSmartCompModal()" class="px-5 py-2 text-xs bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black">إغلاق النافذة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة مادة دراسية جديدة -->
+    <div id="addSubjectModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-card rounded-3xl max-w-sm w-full p-5 space-y-4 neon-border bg-[#0f172a] text-white">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-emerald-400"></i> إضافة مادة دراسية جديدة
+                </h3>
+                <button type="button" onclick="closeAddSubjectModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">اسم الكتاب / المادة:</label>
+                    <input id="newSubTitle" type="text" placeholder="مثلاً: كفاية الأصول (الجزء الأول)" class="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-cyan-400">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">اسم أستاذ الدرس:</label>
+                    <input id="newSubTeacher" type="text" placeholder="سماحة الشيخ المدرس" class="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-cyan-400">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">المباحث 1:</label>
+                        <input id="newSubP1" type="text" placeholder="الشيخ المباحث" class="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-cyan-400">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">وقت الدرس:</label>
+                        <input id="newSubTime" type="text" placeholder="08:00 ص" class="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-cyan-400">
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeAddSubjectModal()" class="px-4 py-2 text-xs text-slate-400 font-bold">إلغاء</button>
+                <button type="button" onclick="confirmAddSubject()" class="px-5 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black shadow-lg">إضافة المادة الآن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل وضبط المواد والأساتذة -->
+    <div id="bookModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-card rounded-3xl max-w-md w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto neon-border bg-[#0f172a] text-white no-scrollbar">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i> ضبط المواد والأساتذة
+                </h3>
+                <button type="button" onclick="closeBookModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3" id="bookConfigInputs"></div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeBookModal()" class="px-4 py-2 text-xs text-slate-400 font-bold">إلغاء</button>
+                <button type="button" onclick="saveBookConfig()" class="px-5 py-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black shadow-lg">حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تصدير تقرير الأستاذ (PDF A4) - مع قائمة الموافقة والاختيار التفصيلية بالكامل -->
+    <div id="exportModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+        <div class="glass-card rounded-3xl max-w-md w-full p-5 space-y-4 neon-border bg-[#0f172a] text-white max-h-[92vh] overflow-y-auto no-scrollbar">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-rose-400"></i> تصدير تقرير الأستاذ (A4)
+                </h3>
+                <button type="button" onclick="closeExportModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="font-bold text-slate-300 block mb-1.5">1. نطاق التقرير الزمني:</label>
+                    <div class="grid grid-cols-2 gap-2 font-bold">
+                        <label class="flex items-center gap-2 p-2.5 glass-pill rounded-xl cursor-pointer"><input type="radio" name="reportScope" value="day" checked onchange="toggleScopeInputs()"> <span>اليوم المحدد فقط</span></label>
+                        <label class="flex items-center gap-2 p-2.5 glass-pill rounded-xl cursor-pointer"><input type="radio" name="reportScope" value="week" onchange="toggleScopeInputs()"> <span>كامل الأسبوع</span></label>
+                        <label class="flex items-center gap-2 p-2.5 glass-pill rounded-xl cursor-pointer"><input type="radio" name="reportScope" value="month" onchange="toggleScopeInputs()"> <span>كامل الشهر</span></label>
+                        <label class="flex items-center gap-2 p-2.5 glass-pill rounded-xl cursor-pointer"><input type="radio" name="reportScope" value="custom" onchange="toggleScopeInputs()"> <span>أيام مختارة</span></label>
+                    </div>
+                </div>
+
+                <div id="customDaysWrapper" class="hidden">
+                    <div id="customDaysList" class="grid grid-cols-2 gap-2 max-h-24 overflow-y-auto p-1"></div>
+                </div>
+
+                <!-- التحكم بما يشاهده الأستاذ من التعويضات -->
+                <div class="bg-amber-950/30 border border-amber-500/30 p-3 rounded-2xl space-y-2">
+                    <div class="flex items-center justify-between border-b border-amber-500/20 pb-1.5">
+                        <span class="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-shield text-xs"></i>
+                            <span>موافقتي على ما يشاهده الأستاذ من التعويضات:</span>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-1.5 text-xs font-bold">
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 cursor-pointer">
+                            <input type="radio" name="pdfCompFilter" value="none" checked class="w-3.5 h-3.5 accent-amber-500">
+                            <span>حجب جميع التعويضات (لا يشاهد الأستاذ أي نقص أو تعويض)</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 cursor-pointer">
+                            <input type="radio" name="pdfCompFilter" value="completed_only" class="w-3.5 h-3.5 accent-emerald-500">
+                            <span>إظهار التعويضات "الخاتمة" فقط (لإثبات قضاء الفائت والالتزام)</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 cursor-pointer">
+                            <input type="radio" name="pdfCompFilter" value="all" class="w-3.5 h-3.5 accent-rose-500">
+                            <span>إظهار جميع التعويضات (الخاتمة والناقصة معاً)</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 cursor-pointer">
+                            <input type="radio" name="pdfCompFilter" value="individual" class="w-3.5 h-3.5 accent-cyan-500">
+                            <span>حسب موافقتي الفردية المحددة في نافذة كل بند</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- قائمة المحتويات المصرح بإرفاقها للأستاذ -->
+                <div class="bg-slate-900/90 border border-indigo-500/30 p-3.5 rounded-2xl space-y-2.5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                        <span class="font-black text-cyan-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved text-xs"></i>
+                            <span>قائمة المحتويات المصرح بإرفاقها للأستاذ:</span>
+                        </span>
+                        <button type="button" onclick="toggleSelectAllPdfInclusions(true)" class="text-[10px] text-indigo-300 underline font-bold">تحديد الكل</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[11px] font-bold">
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_prep" checked class="w-3.5 h-3.5 accent-cyan-500 rounded">
+                            <span>التحضير قبل الدرس</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_attend" checked class="w-3.5 h-3.5 accent-cyan-500 rounded">
+                            <span>حضور الدرس</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_discuss" checked class="w-3.5 h-3.5 accent-cyan-500 rounded">
+                            <span>مباحثة الدرس</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_summary" checked class="w-3.5 h-3.5 accent-cyan-500 rounded">
+                            <span>تقرير الدرس وزر الرابط</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_custom_tasks" checked class="w-3.5 h-3.5 accent-cyan-500 rounded">
+                            <span>الواجبات الإضافية</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_reviews" checked class="w-3.5 h-3.5 accent-indigo-500 rounded">
+                            <span>المراجعة المقررة (5/يوم)</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_retention" class="w-3.5 h-3.5 accent-purple-500 rounded">
+                            <span>مراحل الترسيخ الخماسية</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_notes" checked class="w-3.5 h-3.5 accent-cyan-500 rounded">
+                            <span>ملاحظات الدرس</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_scores" class="w-3.5 h-3.5 accent-rose-500 rounded">
+                            <span>إظهار نسب الدرجات التفصيلية</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-indigo-950/50 border border-indigo-500/40 cursor-pointer">
+                            <input type="checkbox" id="pdf_inc_total_score" class="w-3.5 h-3.5 accent-indigo-500 rounded">
+                            <span>المعدل العام للمادة</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeExportModal()" class="px-4 py-2 text-xs text-slate-400 font-bold">إلغاء</button>
+                <button type="button" onclick="generateAndDownloadPDF()" class="px-5 py-2.5 text-xs bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-black flex items-center gap-2 shadow-lg shadow-rose-600/30">
+                    <i class="fa-solid fa-download"></i>
+                    <span>تنزيل تقرير PDF المعتمد الآن</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- الجزء الثاني المعدل بالكامل: المحرك الأساسي، الاسترجاع الذكي الشامل، ومنظومة التعويض والواجبات -->
+    <script>
+        // إعدادات Firebase السحابية
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbIoGfFzb-oRJy-CE2JA4NGTrqZevNN4w",
+            authDomain: "study-tracker-14cff.firebaseapp.com",
+            projectId: "study-tracker-14cff",
+            storageBucket: "study-tracker-14cff.firebasestorage.app",
+            messagingSenderId: "718690912271",
+            appId: "1:718690912271:web:3e9a1e5d003b2a8dd4fb7a",
+            measurementId: "G-C5FS0VN355"
+        };
+
+        let auth = null, db = null;
+        try {
+            if (typeof firebase !== "undefined") {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
+            }
+        } catch (e) { console.warn("Firebase Init Error:", e); }
+
+        let currentUser = null;
+        let saveTimeout = null;
+        let activeTab = "home";
+
+        // مفاتيح تخزين ثابتة ودائمة لا تتغير لحماية وتثبيت البيانات
+        const BASE_STORAGE_KEY = "HAWZA_USER_PERMANENT_DATA";
+        const ACCOUNTS_LIST_KEY = "HAWZA_SAVED_ACCOUNTS_PERMANENT";
+
+        const defaultSavedAccounts = [
+            { name: "ليدري مَوضِعَ الكَرَم", email: "toknow3131@gmail.com", letter: "🌺", bg: "bg-teal-600", isMain: true, isPro: true },
+            { name: "علي عقيل العبادي", email: "riede12345678910@gmail.com", letter: "ع", bg: "bg-slate-500" },
+            { name: "Ali Aqeel Abadi", email: "riedeaoa@gmail.com", letter: "A", bg: "bg-indigo-600" },
+            { name: "علي عقيل العبادي", email: "riede0a0@gmail.com", letter: "ع", bg: "bg-sky-600" },
+            { name: "وجيهاً بالقُرآن", email: "riedecontnot@gmail.com", letter: "🕌", bg: "bg-emerald-700" }
+        ];
+
+        function getSavedAccountsList() {
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.includes("SAVED") && (k.includes("ACCOUNT") || k.includes("EMAIL"))) {
+                        const raw = localStorage.getItem(k);
+                        if (raw) {
+                            const parsed = JSON.parse(raw);
+                            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                        }
+                    }
+                }
+            } catch (e) {}
+            return defaultSavedAccounts;
+        }
+
+        function saveAccountsList(list) {
+            try { localStorage.setItem(ACCOUNTS_LIST_KEY, JSON.stringify(list)); } catch (e) {}
+        }
+
+        window.renderAccountsPicker = function() {
+            const wrapper = document.getElementById("accountsListWrapper");
+            if (!wrapper) return;
+            const accounts = getSavedAccountsList();
+            const mainAcc = accounts[0];
+            const otherAccs = accounts.slice(1);
+
+            const topEmailEl = document.getElementById("pickerActiveTopEmail");
+            if (topEmailEl && mainAcc) topEmailEl.textContent = mainAcc.email;
+
+            let html = "";
+            if (mainAcc) {
+                html += `
+                    <div onclick="selectEmailAccount('${mainAcc.email}')" class="account-row p-4 rounded-t-3xl rounded-b-xl cursor-pointer border border-slate-200/80 shadow-sm flex items-center justify-between mb-2">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </div>
+                        <div class="text-right flex-1 mx-3.5">
+                            <div class="text-base font-black text-slate-900 leading-snug">${mainAcc.name}</div>
+                            <div class="text-xs font-bold text-slate-500 mt-0.5" dir="ltr">${mainAcc.email}</div>
+                            ${mainAcc.isPro ? `<span class="inline-block mt-1.5 px-3 py-0.5 text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-200 rounded-full shadow-sm">Pro</span>` : ""}
+                        </div>
+                        <div class="relative">
+                            <div class="w-16 h-16 rounded-full p-1 bg-gradient-to-tr from-blue-600 via-emerald-500 to-amber-500 shadow">
+                                <div class="w-full h-full rounded-full ${mainAcc.bg || "bg-teal-600"} flex items-center justify-center text-white text-2xl font-black">
+                                    ${mainAcc.letter || "ع"}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            otherAccs.forEach((acc, idx) => {
+                const isLast = idx === otherAccs.length - 1;
+                html += `
+                    <div onclick="selectEmailAccount('${acc.email}')" class="account-row px-4 py-3 ${isLast ? "rounded-b-3xl rounded-t-lg" : "rounded-lg"} cursor-pointer border border-slate-200/60 flex items-center justify-end gap-3.5">
+                        <div class="text-right flex-1">
+                            <div class="text-sm font-black text-slate-800 leading-tight">${acc.name}</div>
+                            <div class="text-xs font-semibold text-slate-500 mt-0.5" dir="ltr">${acc.email}</div>
+                        </div>
+                        <div class="w-10 h-10 rounded-full ${acc.bg || "bg-indigo-600"} text-white font-bold text-base flex items-center justify-center shadow-sm shrink-0">
+                            ${acc.letter || "ع"}
+                        </div>
+                    </div>
+                `;
+            });
+
+            wrapper.innerHTML = html;
+        };
+
+        window.toggleAddAccountForm = function(show) {
+            const form = document.getElementById("addNewAccountForm");
+            if (form) form.classList.toggle("hidden", !show);
+        };
+
+        window.saveAndLoginCustomAccount = function() {
+            const name = document.getElementById("customAccName").value.trim() || "علي عقيل العبادي";
+            const email = document.getElementById("customAccEmail").value.trim().toLowerCase();
+            const pass = document.getElementById("customAccPass").value || "HawzaSync2026!";
+
+            if (!email || !email.includes("@")) {
+                alert("يرجى كتابة بريد إلكتروني صحيح.");
+                return;
+            }
+
+            const list = getSavedAccountsList();
+            if (!list.some(a => a.email.toLowerCase() === email)) {
+                list.push({ name, email, letter: name.charAt(0) || "ع", bg: "bg-indigo-600", customPass: pass });
+                saveAccountsList(list);
+            }
+            toggleAddAccountForm(false);
+            renderAccountsPicker();
+            selectEmailAccount(email, pass);
+        };
+
+        window.selectEmailAccount = function(email, optionalPass) {
+            const accounts = getSavedAccountsList();
+            const chosen = accounts.find(a => a.email.toLowerCase() === email.toLowerCase()) || {
+                name: "علي عقيل العبادي", email: email, letter: "ع", bg: "bg-indigo-600"
+            };
+
+            const filtered = accounts.filter(a => a.email.toLowerCase() !== email.toLowerCase());
+            filtered.unshift(chosen);
+            saveAccountsList(filtered);
+
+            const safeUid = "user_" + chosen.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+            currentUser = {
+                uid: safeUid,
+                displayName: chosen.name,
+                email: chosen.email,
+                letter: chosen.letter || "ع",
+                bg: chosen.bg || "bg-indigo-600"
+            };
+
+            try { localStorage.setItem("HAWZA_LAST_ACTIVE_EMAIL", chosen.email); } catch (e) {}
+
+            loadLocalData();
+            showAppUI();
+            if (typeof window.renderApp === "function") window.renderApp();
+
+            syncCloudInBackground(chosen, safeUid, optionalPass);
+        };
+
+        async function syncCloudInBackground(chosen, safeUid, optionalPass) {
+            if (!auth || !db) return;
+            try {
+                const syncPass = optionalPass || chosen.customPass || ("Hawza#" + safeUid.slice(0, 10));
+                try {
+                    await auth.signInWithEmailAndPassword(chosen.email, syncPass);
+                } catch (e1) {
+                    try { await auth.createUserWithEmailAndPassword(chosen.email, syncPass); } catch (e2) {}
+                }
+
+                const doc = await db.collection("users").doc(safeUid).get();
+                if (doc && doc.exists) {
+                    const cloudData = doc.data();
+                    if (cloudData && Array.isArray(cloudData.weeks) && cloudData.weeks.length > 0) {
+                        const localRichness = countDataRichness(state);
+                        const cloudRichness = countDataRichness(cloudData);
+                        if (cloudRichness >= localRichness) {
+                            applyLoadedData(cloudData);
+                            localStorage.setItem(getAccountStorageKey(), JSON.stringify(state));
+                            localStorage.setItem(BASE_STORAGE_KEY, JSON.stringify(state));
+                            if (typeof window.renderApp === "function") window.renderApp();
+                        }
+                    }
+                } else {
+                    triggerAutoSave();
+                }
+            } catch (err) {
+                console.warn("Cloud Sync Notice:", err);
+            }
+        }
+
+        window.triggerGoogleAccountChooser = function() {
+            const accounts = getSavedAccountsList();
+            selectEmailAccount(accounts[0].email);
+        };
+
+        window.openAccountSwitcher = function() {
+            renderAccountsPicker();
+            document.getElementById("authScreen").style.display = "flex";
+            document.getElementById("mainApp").style.display = "none";
+        };
+
+        window.enterAsGuest = function() {
+            const accounts = getSavedAccountsList();
+            selectEmailAccount(accounts[0].email);
+        };
+
+        function showAppUI() {
+            document.getElementById("authScreen").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            const emailBadge = document.getElementById("activeEmailHeaderBadge");
+            const avatarBadge = document.getElementById("headerAvatarBadge");
+            if (emailBadge && currentUser) emailBadge.textContent = "• " + currentUser.email;
+            if (avatarBadge && currentUser) avatarBadge.textContent = currentUser.letter || "ع";
+        }
+
+        const scheduledReviewLabels = ["المراجعة 1", "المراجعة 2", "المراجعة 3", "المراجعة 4", "المراجعة 5"];
+
+        const teacherStatusConfig = {
+            present: { text: "الأستاذ حاضر ✓", bg: "bg-emerald-600 text-white", pdfText: "حاضر", pdfColor: "#10b981" },
+            absent:  { text: "الأستاذ غائب ✕", bg: "bg-rose-600 text-white", pdfText: "غائب", pdfColor: "#ef4444" },
+            ended:   { text: "الدرس منتهي ⏳", bg: "bg-amber-600 text-white", pdfText: "منتهي", pdfColor: "#f59e0b" },
+            holiday: { text: "عطلة ⛱", bg: "bg-purple-600 text-white", pdfText: "عطلة", pdfColor: "#9333ea" },
+            none:    { text: "لا يوجد درس ⊘", bg: "bg-slate-700 text-slate-200", pdfText: "لا يوجد", pdfColor: "#94a3b8" }
+        };
+
+        const partnerStatusConfig = {
+            present: { text: "المباحث حاضر ✓", bg: "bg-emerald-600 text-white", pdfText: "حاضر", pdfColor: "#10b981" },
+            absent:  { text: "المباحث غائب ✕", bg: "bg-rose-600 text-white", pdfText: "غائب", pdfColor: "#ef4444" },
+            none:    { text: "لا يوجد مباحث ⊘", bg: "bg-slate-700 text-slate-200", pdfText: "لا يوجد", pdfColor: "#94a3b8" }
+        };
+
+        function getSystemTodayIndex() {
+            const jsDay = new Date().getDay();
+            return jsDay === 6 ? 0 : jsDay + 1;
+        }
+
+        function createDefaultDaySchedule() {
+            return [
+                { id: 1, time: "05:00 ص - 07:00 ص", task: "صلاة الفجر والتحضير الصباحي", done: false, score: 100 },
+                { id: 2, time: "08:00 ص - 10:00 ص", task: "حضور الدروس عند الأستاذ", done: false, score: 100 },
+                { id: 3, time: "10:00 ص - 12:00 م", task: "جلسة المباحثة مع المباحث", done: false, score: 100 },
+                { id: 4, time: "03:30 م - 05:30 م", task: "كتابة تقرير الدرس وتدوين المطالب", done: false, score: 100 },
+                { id: 5, time: "07:30 م - 09:30 م", task: "المراجعة الخماسية ومراحل الترسيخ", done: false, score: 100 }
+            ];
+        }
+
+        function createDefaultRetentionForBook() {
+            return {
+                initial: [false, false, false, false],
+                secondary: [
+                    [false, false, false, false, false],
+                    [false, false, false, false, false],
+                    [false, false, false, false, false],
+                    [false, false, false, false, false],
+                    [false, false, false, false, false]
+                ],
+                spaced1: [false, false, false, false, false],
+                spaced2: [false, false, false, false, false]
+            };
+        }
+
+        function normalizeRetention(ret) {
+            const def = createDefaultRetentionForBook();
+            if (!ret || typeof ret !== "object") return def;
+            const initial = (Array.isArray(ret.initial) && ret.initial.length === 4) ? ret.initial : def.initial;
+            let secondary = def.secondary;
+            if (Array.isArray(ret.secondary) && ret.secondary.length === 5) {
+                secondary = ret.secondary.map(item => Array.isArray(item) && item.length === 5 ? item : [false, false, false, false, false]);
+            }
+            const spaced1 = (Array.isArray(ret.spaced1) && ret.spaced1.length === 5) ? ret.spaced1 : def.spaced1;
+            const spaced2 = (Array.isArray(ret.spaced2) && ret.spaced2.length === 5) ? ret.spaced2 : def.spaced2;
+            return { initial, secondary, spaced1, spaced2 };
+        }
+
+        function normalizeBook(bk) {
+            if (!bk || typeof bk !== "object") bk = {};
+
+            let compensations = [];
+            if (Array.isArray(bk.compensations)) {
+                compensations = bk.compensations.map(c => ({
+                    id: c.id || Date.now() + Math.random(),
+                    category: c.category || "custom",
+                    title: c.title || "بند تعويض",
+                    reason: c.reason || "",
+                    targetRequired: c.targetRequired || "",
+                    progressAmount: c.progressAmount || "",
+                    status: c.status || "pending",
+                    createdDate: c.createdDate || "",
+                    allowInPdf: (typeof c.allowInPdf !== "undefined") ? !!c.allowInPdf : true
+                }));
+            } else if (bk.compensation && typeof bk.compensation === "object") {
+                if (bk.compensation.hasNeed) {
+                    compensations.push({
+                        id: Date.now(),
+                        category: "teacher",
+                        title: "استدراك درس الأستاذ الفائت",
+                        reason: "غياب الأستاذ أو فوات الدرس",
+                        targetRequired: bk.compensation.method || "استماع للتسجيل أو مطالعة الشرح",
+                        progressAmount: bk.compensation.duration || "",
+                        status: bk.compensation.isCompensated ? "completed" : "pending",
+                        createdDate: bk.compensation.doneDate || "",
+                        allowInPdf: true
+                    });
+                }
+            } else if (typeof bk.compensation === "string" && bk.compensation.trim() !== "") {
+                compensations.push({
+                    id: Date.now(),
+                    category: "custom",
+                    title: "تعويض درس سابق",
+                    reason: "مطلب دراسي مسجل",
+                    targetRequired: bk.compensation,
+                    progressAmount: bk.compensation,
+                    status: "completed",
+                    createdDate: "",
+                    allowInPdf: true
+                });
+            }
+
+            return {
+                topic: bk.topic || "",
+                isBookCompleted: !!bk.isBookCompleted,
+                teacherStatus: bk.teacherStatus || "present",
+                partnerStatus: bk.partnerStatus || "present",
+                lessonTime: bk.lessonTime || "",
+                discussTime: bk.discussTime || "",
+                compensations: compensations,
+                prep: !!bk.prep,
+                prepScore: (bk.prepScore !== undefined && bk.prepScore !== null && bk.prepScore !== "") ? parseInt(bk.prepScore) : "",
+                attend: !!bk.attend,
+                attendScore: (bk.attendScore !== undefined && bk.attendScore !== null && bk.attendScore !== "") ? parseInt(bk.attendScore) : "",
+                discuss: !!bk.discuss,
+                discussScore: (bk.discussScore !== undefined && bk.discussScore !== null && bk.discussScore !== "") ? parseInt(bk.discussScore) : "",
+                summary: !!bk.summary,
+                summaryScore: (bk.summaryScore !== undefined && bk.summaryScore !== null && bk.summaryScore !== "") ? parseInt(bk.summaryScore) : "",
+                customTasks: Array.isArray(bk.customTasks) ? bk.customTasks.map(t => ({
+                    id: t.id || Date.now(),
+                    label: t.label || "واجب إضافي",
+                    score: (t.score !== undefined && t.score !== null && t.score !== "") ? parseInt(t.score) : 100,
+                    done: !!t.done
+                })) : [],
+                scheduledReviews: (Array.isArray(bk.scheduledReviews) && bk.scheduledReviews.length === 5) ? bk.scheduledReviews : [false, false, false, false, false],
+                rubricAnswers: bk.rubricAnswers || {},
+                notes: bk.notes || "",
+                attachedFileName: bk.attachedFileName || "",
+                reportUrl: bk.reportUrl || ""
+            };
+        }
+
+        function createDefaultBooksConfig() {
+            return [
+                { title: "المسائل المنتخبة (المعاملات)", teacher: "سماحة الشيخ المدرس", partner1: "الشيخ المباحث 1", partner2: "الشيخ المباحث 2", defaultLessonTime: "08:00 ص", defaultDiscussTime: "10:00 ص" },
+                { title: "ألفية ابن مالك (شرح ابن الناظم)", teacher: "سماحة الشيخ المدرس", partner1: "الشيخ المباحث 1", partner2: "الشيخ المباحث 2", defaultLessonTime: "09:00 ص", defaultDiscussTime: "11:00 ص" },
+                { title: "عقائد الإمامية (المظفر)", teacher: "سماحة الشيخ المدرس", partner1: "الشيخ المباحث 1", partner2: "الشيخ المباحث 2", defaultLessonTime: "10:00 ص", defaultDiscussTime: "01:00 م" },
+                { title: "المنطق (حاشية ملا عبد الله)", teacher: "سماحة الشيخ المدرس", partner1: "الشيخ المباحث 1", partner2: "الشيخ المباحث 2", defaultLessonTime: "11:00 ص", defaultDiscussTime: "02:00 م" }
+            ];
+        }
+
+        function createDefaultRubricsBank() {
+            return {
+                "1_prep": [
+                    "حفظ المتن وضبطه: حفظ بيت الألفية وإعرابه واستنباط قاعدته قبل فتح الشرح",
+                    "تفكيك عبارة ابن الناظم: فرز عناصر المطلب وضبط عود الضمائر والاحترازات",
+                    "فحص العلة وموضع الشاهد: التدقيق في علة الحكم النحوي والشاهد الشعري",
+                    "توليد الإشكال والمحاكمة: مقارنة كلام الشارح بغيره بروح المستشكل",
+                    "رصد عُقدة الدرس: حصر النقطة الغامضة الدقيقة لسماع حل الأستاذ لها"
+                ]
+            };
+        }
+
+        let state = {
+            activeWeekId: null,
+            activeDayIndex: getSystemTodayIndex(),
+            activeSubjectIndex: 0,
+            retentionSubjectIndex: 0,
+            booksConfig: createDefaultBooksConfig(),
+            rubricsBank: createDefaultRubricsBank(),
+            retentionStages: {
+                0: createDefaultRetentionForBook(),
+                1: createDefaultRetentionForBook(),
+                2: createDefaultRetentionForBook(),
+                3: createDefaultRetentionForBook()
+            },
+            weeks: [],
+            archives: []
+        };
+
+        function getAccountStorageKey() {
+            const uid = currentUser && currentUser.uid ? currentUser.uid : "default";
+            return BASE_STORAGE_KEY + "_" + uid;
+        }
+
+        function normalizeDay(day) {
+            if (!day || typeof day !== "object") return null;
+            if (!day.books || typeof day.books !== "object") day.books = {};
+            for (let b = 0; b < state.booksConfig.length; b++) {
+                day.books[b] = normalizeBook(day.books[b]);
+            }
+            if (typeof day.isHoliday === "undefined") day.isHoliday = false;
+            if (!day.customSchedule || !Array.isArray(day.customSchedule)) {
+                day.customSchedule = createDefaultDaySchedule();
+            }
+            return day;
+        }
+
+        function getHijriSistaniDate(targetDate) {
+            const baseDate = new Date(2026, 9, 13);
+            const diffDays = Math.round((targetDate - baseDate) / (1000 * 60 * 60 * 24));
+            let day = 1 + diffDays;
+            let month = "جمادى الأولى";
+            let year = 1448;
+            if (day < 1) { month = "ربيع الثاني"; day += 30; }
+            else if (day > 30) { month = "جمادى الآخرة"; day -= 30; }
+            return `${day} ${month} ${year} هـ`;
+        }
+
+        function createNewWeekObject(weekNumber, refDate = new Date()) {
+            const date = new Date(refDate);
+            const dayOfWeek = date.getDay();
+            const diffToSat = (dayOfWeek === 6) ? 0 : -(dayOfWeek + 1);
+            date.setDate(date.getDate() + diffToSat);
+
+            const dayNames = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+            const days = [];
+
+            for (let i = 0; i < 7; i++) {
+                const cur = new Date(date);
+                cur.setDate(cur.getDate() + i);
+                const dName = dayNames[i];
+                const isWeekend = (dName === "الخميس" || dName === "الجمعة");
+                const dayObj = {
+                    dayName: dName,
+                    gregorian: `${cur.getDate()} / ${cur.getMonth() + 1} / ${cur.getFullYear()} م`,
+                    hijri: getHijriSistaniDate(cur),
+                    isoDate: cur.toISOString().split("T")[0],
+                    isHoliday: isWeekend,
+                    books: {},
+                    customSchedule: createDefaultDaySchedule()
+                };
+                for (let b = 0; b < state.booksConfig.length; b++) {
+                    const cfg = state.booksConfig[b];
+                    dayObj.books[b] = normalizeBook({
+                        lessonTime: cfg.defaultLessonTime || "",
+                        discussTime: cfg.defaultDiscussTime || ""
+                    });
+                }
+                days.push(dayObj);
+            }
+            return {
+                id: "week_" + Date.now(),
+                title: `الأسبوع الدراسي (${weekNumber})`,
+                startDate: date.toISOString(),
+                days: days
+            };
+        }
+
+        function initFirstWeek() {
+            const w = createNewWeekObject(1, new Date());
+            state.weeks = [w];
+            state.activeWeekId = w.id;
+            state.activeDayIndex = getSystemTodayIndex();
+            triggerAutoSave();
+        }
+
+        function applyLoadedData(data) {
+            if (!data || typeof data !== "object") return;
+            if (data.booksConfig && Array.isArray(data.booksConfig) && data.booksConfig.length > 0) {
+                state.booksConfig = data.booksConfig;
+                if (state.booksConfig[1] && state.booksConfig[1].title.includes("ألفية ابن مالك")) {
+                    state.booksConfig[1].title = "ألفية ابن مالك (شرح ابن الناظم)";
+                }
+            }
+            if (data.rubricsBank && typeof data.rubricsBank === "object") {
+                state.rubricsBank = { ...createDefaultRubricsBank(), ...data.rubricsBank };
+            }
+            if (!state.retentionStages) state.retentionStages = {};
+            for (let b = 0; b < state.booksConfig.length; b++) {
+                state.retentionStages[b] = normalizeRetention(data.retentionStages ? data.retentionStages[b] : null);
+            }
+            state.archives = Array.isArray(data.archives) ? data.archives : [];
+            if (data.weeks && Array.isArray(data.weeks) && data.weeks.length > 0 && data.weeks[0].days && data.weeks[0].days.length === 7) {
+                state.weeks = data.weeks.map(w => ({
+                    ...w,
+                    days: (w.days || []).map(d => normalizeDay(d))
+                }));
+                state.activeWeekId = data.activeWeekId || state.weeks[0].id;
+            }
+            state.activeSubjectIndex = typeof data.activeSubjectIndex === "number" ? data.activeSubjectIndex : 0;
+        }
+
+        // دالة حساب ثراء البيانات للتأكد من استرجاع الملفات المليئة بالدروس وليس الأسابيع الفارغة
+        function countDataRichness(data) {
+            if (!data || !Array.isArray(data.weeks)) return 0;
+            let count = 0;
+            data.weeks.forEach(w => {
+                (w.days || []).forEach(d => {
+                    if (d.books) {
+                        Object.values(d.books).forEach(b => {
+                            if (b.topic && b.topic.trim() !== "") count += 5;
+                            if (b.notes && b.notes.trim() !== "") count += 3;
+                            if (b.prepScore !== "" && b.prepScore !== undefined) count += 2;
+                            if (b.attendScore !== "" && b.attendScore !== undefined) count += 2;
+                            if (b.discussScore !== "" && b.discussScore !== undefined) count += 2;
+                            if (b.summaryScore !== "" && b.summaryScore !== undefined) count += 2;
+                            if (b.prep || b.attend || b.discuss || b.summary) count += 2;
+                            if (Array.isArray(b.compensations) && b.compensations.length > 0) count += (b.compensations.length * 3);
+                            if (Array.isArray(b.customTasks) && b.customTasks.length > 0) count += (b.customTasks.length * 3);
+                            if (Array.isArray(b.scheduledReviews)) count += b.scheduledReviews.filter(Boolean).length;
+                        });
+                    }
+                });
+            });
+            return count;
+        }
+
+        // ================== محرك استرجاع البيانات الذكي الشامل ==================
+        function loadLocalData() {
+            state.booksConfig = createDefaultBooksConfig();
+            state.rubricsBank = createDefaultRubricsBank();
+            state.weeks = [];
+            state.archives = [];
+
+            let bestParsedData = null;
+            let highestRichness = -1;
+
+            // 1. مسح شامل لجميع مفاتيح التخزين المحلية في المتصفح التي تبدأ بـ HAWZA أو SYSTEM
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith("HAWZA_") || key.includes("SYSTEM") || key.includes("COMPLETE"))) {
+                    if (key.includes("SAVED_ACCOUNTS") || key.includes("SAVED_EMAIL")) continue;
+                    try {
+                        const raw = localStorage.getItem(key);
+                        if (!raw) continue;
+                        const parsed = JSON.parse(raw);
+                        if (parsed && Array.isArray(parsed.weeks) && parsed.weeks.length > 0) {
+                            const richness = countDataRichness(parsed);
+                            if (richness > highestRichness) {
+                                highestRichness = richness;
+                                bestParsedData = parsed;
+                            }
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            // 2. إذا وجدنا نسخة تحتوي على دراسات ومطالب مسجلة نعتمدها فوراً ونحفظها بالمفتاح الدائم
+            if (bestParsedData && highestRichness > 0) {
+                applyLoadedData(bestParsedData);
+                try {
+                    localStorage.setItem(getAccountStorageKey(), JSON.stringify(state));
+                    localStorage.setItem(BASE_STORAGE_KEY, JSON.stringify(state));
+                } catch (e) {}
+            } else if (bestParsedData) {
+                applyLoadedData(bestParsedData);
+            } else {
+                initFirstWeek();
+            }
+
+            autoHighlightToday();
+        }
+
+        // حفظ تلقائي فوري ومحمي
+        function triggerAutoSave() {
+            const ind = document.getElementById("syncIndicator");
+            if (ind) ind.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> يحفظ...`;
+
+            try {
+                localStorage.setItem(getAccountStorageKey(), JSON.stringify(state));
+                localStorage.setItem(BASE_STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {}
+
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => {
+                if (currentUser && currentUser.uid && db) {
+                    try {
+                        await db.collection("users").doc(currentUser.uid).set({
+                            accountEmail: currentUser.email || "",
+                            accountName: currentUser.displayName || "",
+                            booksConfig: state.booksConfig,
+                            rubricsBank: state.rubricsBank,
+                            retentionStages: state.retentionStages,
+                            activeWeekId: state.activeWeekId,
+                            activeDayIndex: state.activeDayIndex,
+                            activeSubjectIndex: state.activeSubjectIndex,
+                            weeks: state.weeks,
+                            archives: state.archives,
+                            lastSync: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        if (ind) ind.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> محفوظ سحابياً ومحلياً`;
+                        return;
+                    } catch (e) {}
+                }
+                if (ind) ind.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> محفوظ دائماً`;
+            }, 300);
+        }
+
+        function getCurrentWeek() {
+            if (!state.weeks || state.weeks.length === 0) initFirstWeek();
+            return state.weeks.find(w => w.id === state.activeWeekId) || state.weeks[0];
+        }
+
+        function getCurrentDay() {
+            const w = getCurrentWeek();
+            if (!w || !w.days || w.days.length === 0) return null;
+            return w.days[state.activeDayIndex] || w.days[0];
+        }
+
+        function autoHighlightToday() {
+            const todayIso = new Date().toISOString().split("T")[0];
+            const curW = getCurrentWeek();
+            if (curW && curW.days) {
+                const foundIdx = curW.days.findIndex(d => d.isoDate === todayIso);
+                if (foundIdx !== -1) { state.activeDayIndex = foundIdx; return; }
+            }
+            state.activeDayIndex = getSystemTodayIndex();
+        }
+
+        // ================== حساب الدرجات التحريري والحر ==================
+        function calculateBookScore(bk) {
+            const scoresList = [];
+            if (bk.prep) scoresList.push(bk.prepScore !== "" ? parseInt(bk.prepScore) : 0);
+            if (bk.attend) scoresList.push(bk.attendScore !== "" ? parseInt(bk.attendScore) : 0);
+            if (bk.discuss) scoresList.push(bk.discussScore !== "" ? parseInt(bk.discussScore) : 0);
+            if (bk.summary) scoresList.push(bk.summaryScore !== "" ? parseInt(bk.summaryScore) : 0);
+
+            (bk.customTasks || []).forEach(ct => {
+                if (ct.done) scoresList.push(ct.score !== "" ? parseInt(ct.score) : 0);
+            });
+
+            const taskAvg = scoresList.length > 0 ? (scoresList.reduce((a, b) => a + b, 0) / scoresList.length) : 0;
+            const revCount = (bk.scheduledReviews || []).filter(Boolean).length;
+            const revAvg = (revCount / 5) * 100;
+            return Math.round((taskAvg * 0.7) + (revAvg * 0.3));
+        }
+
+        function calculateDayScore(day) {
+            if (!day || day.isHoliday) return 0;
+            let total = 0, count = 0;
+            for (let b = 0; b < state.booksConfig.length; b++) {
+                const bk = normalizeBook(day.books ? day.books[b] : null);
+                if (bk.isBookCompleted || bk.teacherStatus === "none" || bk.teacherStatus === "holiday") continue;
+                total += calculateBookScore(bk);
+                count++;
+            }
+            return count === 0 ? 0 : Math.round(total / count);
+        }
+
+        function calculateWeekScore(week) {
+            if (!week || !week.days) return 0;
+            const studyDays = week.days.filter(d => !d.isHoliday);
+            if (studyDays.length === 0) return 0;
+            return Math.round(studyDays.reduce((acc, d) => acc + calculateDayScore(d), 0) / studyDays.length);
+        }
+
+        function isDayToday(d, idx) {
+            const todayIso = new Date().toISOString().split("T")[0];
+            return (d && d.isoDate === todayIso) || idx === getSystemTodayIndex();
+        }
+
+        window.handleDirectScoreInput = function(bIdx, scoreKey, val) {
+            const day = getCurrentDay();
+            if (!day) return;
+            const scoreNum = (val === "" || val === null) ? "" : Math.min(100, Math.max(0, parseInt(val) || 0));
+            day.books[bIdx][scoreKey] = scoreNum;
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.toggleTask = function(bIdx, taskKey, scoreKey) {
+            const day = getCurrentDay();
+            if (!day) return;
+            const current = !!day.books[bIdx][taskKey];
+            day.books[bIdx][taskKey] = !current;
+            if (!current) {
+                if (day.books[bIdx][scoreKey] === "" || day.books[bIdx][scoreKey] === 0) day.books[bIdx][scoreKey] = 100;
+            } else {
+                day.books[bIdx][scoreKey] = "";
+            }
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        // ================== إدارة الواجبات الإضافية للمادة ==================
+        let activeTaskModalBookIndex = null;
+
+        window.openAddTaskModal = function(bIdx) {
+            activeTaskModalBookIndex = bIdx;
+            const inputLabel = document.getElementById("newCustomTaskLabel");
+            const inputScore = document.getElementById("newCustomTaskDefaultScore");
+            if (inputLabel) inputLabel.value = "";
+            if (inputScore) inputScore.value = "100";
+            document.getElementById("addTaskModal").classList.remove("hidden");
+        };
+
+        window.closeAddTaskModal = function() {
+            document.getElementById("addTaskModal").classList.add("hidden");
+            activeTaskModalBookIndex = null;
+        };
+
+        window.confirmAddCustomTask = function() {
+            if (activeTaskModalBookIndex === null) return;
+            const inputLabel = document.getElementById("newCustomTaskLabel");
+            const inputScore = document.getElementById("newCustomTaskDefaultScore");
+            const label = inputLabel ? inputLabel.value.trim() : "";
+            const score = inputScore ? (parseInt(inputScore.value) || 100) : 100;
+
+            if (!label) {
+                alert("يرجى كتابة اسم الواجب الدراسي الجديد.");
+                return;
+            }
+
+            const day = getCurrentDay();
+            if (day && day.books[activeTaskModalBookIndex]) {
+                const bk = day.books[activeTaskModalBookIndex];
+                if (!bk.customTasks) bk.customTasks = [];
+                bk.customTasks.push({
+                    id: Date.now(),
+                    label: label,
+                    score: score,
+                    done: true
+                });
+                triggerAutoSave();
+            }
+
+            closeAddTaskModal();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.toggleCustomTask = function(bIdx, taskId) {
+            const day = getCurrentDay();
+            if (!day || !day.books[bIdx] || !day.books[bIdx].customTasks) return;
+            const task = day.books[bIdx].customTasks.find(t => t.id === taskId);
+            if (task) {
+                task.done = !task.done;
+                triggerAutoSave();
+                if (typeof window.renderApp === "function") window.renderApp();
+            }
+        };
+
+        window.handleCustomTaskScore = function(bIdx, taskId, val) {
+            const day = getCurrentDay();
+            if (!day || !day.books[bIdx] || !day.books[bIdx].customTasks) return;
+            const task = day.books[bIdx].customTasks.find(t => t.id === taskId);
+            if (task) {
+                task.score = val === "" ? "" : Math.min(100, Math.max(0, parseInt(val) || 0));
+                triggerAutoSave();
+                if (typeof window.renderApp === "function") window.renderApp();
+            }
+        };
+
+        window.deleteCustomTask = function(bIdx, taskId) {
+            const day = getCurrentDay();
+            if (!day || !day.books[bIdx] || !day.books[bIdx].customTasks) return;
+            day.books[bIdx].customTasks = day.books[bIdx].customTasks.filter(t => t.id !== taskId);
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        // ================== منظومة التعويض الذكية والمتطورة الشاملة ==================
+        let activeCompBookIndex = null;
+
+        function checkAndSyncCompensations(day, bIdx) {
+            const bk = day.books[bIdx];
+            if (!bk.compensations) bk.compensations = [];
+
+            // 1. فحص غياب الأستاذ
+            const hasTeacherComp = bk.compensations.some(c => c.category === 'teacher');
+            if (bk.teacherStatus === 'absent' && !hasTeacherComp) {
+                bk.compensations.push({
+                    id: Date.now() + 1,
+                    category: 'teacher',
+                    title: 'استدراك درس الأستاذ الفائت',
+                    reason: 'غياب سماحة الشيخ الأستاذ',
+                    targetRequired: 'استماع للتسجيل الصوتي أو مطالعة الشرح والمقرر',
+                    progressAmount: '',
+                    status: 'pending',
+                    createdDate: day.isoDate,
+                    allowInPdf: true
+                });
+            }
+
+            // 2. فحص غياب المباحث
+            const hasPartnerComp = bk.compensations.some(c => c.category === 'partner');
+            if (bk.partnerStatus === 'absent' && !hasPartnerComp) {
+                bk.compensations.push({
+                    id: Date.now() + 2,
+                    category: 'partner',
+                    title: 'تعويض جلسة المباحثة',
+                    reason: 'غياب الشيخ المباحث',
+                    targetRequired: 'مباحثة استدراكية مع زميل آخر أو تحرير الإشكالات ذاتياً',
+                    progressAmount: '',
+                    status: 'pending',
+                    createdDate: day.isoDate,
+                    allowInPdf: false
+                });
+            }
+
+            // 3. فحص عجز المراجعات المقررة
+            const revDone = (bk.scheduledReviews || []).filter(Boolean).length;
+            const hasReviewComp = bk.compensations.some(c => c.category === 'reviews');
+            if (revDone > 0 && revDone < 5 && !hasReviewComp && !day.isHoliday) {
+                bk.compensations.push({
+                    id: Date.now() + 3,
+                    category: 'reviews',
+                    title: `قضاء مراجعات مقررة (${5 - revDone} متبقية)`,
+                    reason: 'عدم استيفاء المراجعات الخمس اليومية للمطلب',
+                    targetRequired: 'إعادة تثبيت وحفظ المطلب في اليوم اللاحق',
+                    progressAmount: '',
+                    status: 'pending',
+                    createdDate: day.isoDate,
+                    allowInPdf: false
+                });
+            }
+        }
+
+        window.openSmartCompModal = function(bIdx) {
+            activeCompBookIndex = bIdx;
+            const day = getCurrentDay();
+            if (!day || !day.books[bIdx]) return;
+
+            checkAndSyncCompensations(day, bIdx);
+
+            const cfg = state.booksConfig[bIdx] || { title: `المادة (${bIdx + 1})` };
+            const subTitle = document.getElementById("compModalHeaderSub");
+            if (subTitle) {
+                subTitle.textContent = `المادة: ${cfg.title} (الأستاذ: ${cfg.teacher}) • ${day.dayName}`;
+            }
+
+            const inputTitle = document.getElementById("newManualCompTitle");
+            const inputTarget = document.getElementById("newManualCompTarget");
+            if (inputTitle) inputTitle.value = "";
+            if (inputTarget) inputTarget.value = "";
+
+            renderCompItemsList();
+            document.getElementById("smartCompensationModal").classList.remove("hidden");
+        };
+
+        window.closeSmartCompModal = function() {
+            document.getElementById("smartCompensationModal").classList.add("hidden");
+            activeCompBookIndex = null;
+        };
+
+        window.addNewManualCompensation = function() {
+            if (activeCompBookIndex === null) return;
+            const day = getCurrentDay();
+            if (!day || !day.books[activeCompBookIndex]) return;
+
+            const inputTitle = document.getElementById("newManualCompTitle");
+            const inputTarget = document.getElementById("newManualCompTarget");
+            const title = inputTitle ? inputTitle.value.trim() : "";
+            const target = inputTarget ? inputTarget.value.trim() : "";
+
+            if (!title) {
+                alert("يرجى كتابة عنوان الالتزام التعويضي.");
+                return;
+            }
+
+            const bk = day.books[activeCompBookIndex];
+            if (!bk.compensations) bk.compensations = [];
+            bk.compensations.push({
+                id: Date.now(),
+                category: "custom",
+                title: title,
+                reason: "نقص مخصص تم تقييده ذاتياً",
+                targetRequired: target || "قضاء المطلب وتثبيته كاملاً",
+                progressAmount: "",
+                status: "pending",
+                createdDate: day.isoDate,
+                allowInPdf: false
+            });
+
+            if (inputTitle) inputTitle.value = "";
+            if (inputTarget) inputTarget.value = "";
+
+            triggerAutoSave();
+            renderCompItemsList();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.toggleCompStatus = function(cIdx) {
+            if (activeCompBookIndex === null) return;
+            const day = getCurrentDay();
+            if (!day || !day.books[activeCompBookIndex] || !day.books[activeCompBookIndex].compensations) return;
+            const item = day.books[activeCompBookIndex].compensations[cIdx];
+            if (item) {
+                item.status = (item.status === "completed") ? "pending" : "completed";
+                triggerAutoSave();
+                renderCompItemsList();
+                if (typeof window.renderApp === "function") window.renderApp();
+            }
+        };
+
+        window.updateCompField = function(cIdx, field, val) {
+            if (activeCompBookIndex === null) return;
+            const day = getCurrentDay();
+            if (!day || !day.books[activeCompBookIndex] || !day.books[activeCompBookIndex].compensations) return;
+            const item = day.books[activeCompBookIndex].compensations[cIdx];
+            if (item) {
+                item[field] = val;
+                triggerAutoSave();
+            }
+        };
+
+        window.toggleCompPdfPermission = function(cIdx, isAllowed) {
+            if (activeCompBookIndex === null) return;
+            const day = getCurrentDay();
+            if (!day || !day.books[activeCompBookIndex] || !day.books[activeCompBookIndex].compensations) return;
+            const item = day.books[activeCompBookIndex].compensations[cIdx];
+            if (item) {
+                item.allowInPdf = isAllowed;
+                triggerAutoSave();
+            }
+        };
+
+        window.deleteCompItem = function(cIdx) {
+            if (activeCompBookIndex === null) return;
+            const day = getCurrentDay();
+            if (!day || !day.books[activeCompBookIndex] || !day.books[activeCompBookIndex].compensations) return;
+            day.books[activeCompBookIndex].compensations.splice(cIdx, 1);
+            triggerAutoSave();
+            renderCompItemsList();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        function renderCompItemsList() {
+            const container = document.getElementById("compItemsListContainer");
+            if (!container || activeCompBookIndex === null) return;
+            const day = getCurrentDay();
+            if (!day || !day.books[activeCompBookIndex]) return;
+
+            const list = day.books[activeCompBookIndex].compensations || [];
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-xs text-slate-400 bg-slate-900/60 p-4 rounded-2xl text-center space-y-1">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+                        <p class="font-bold">الحمد لله، لا توجد أي نواقص أو تعويضات مسجلة لهذه المادة اليوم.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map((c, idx) => {
+                const isDone = c.status === "completed";
+                return `
+                    <div class="p-3 rounded-2xl border transition space-y-2.5 ${
+                        isDone ? 'bg-emerald-950/25 border-emerald-500/40 text-emerald-300' : 'bg-slate-900/90 border-amber-500/35 text-slate-200'
+                    }">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="space-y-0.5 flex-1 pr-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-black ${isDone ? 'text-emerald-300' : 'text-amber-300'}">${c.title}</span>
+                                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${isDone ? 'bg-emerald-500 text-slate-950' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'}">
+                                        ${isDone ? 'خاتم ومعوّض ✓' : 'قيد الاستدراك ⏳'}
+                                    </span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 font-bold">${c.reason || 'التزام دراسي تعويضي'}</p>
+                            </div>
+                            <button type="button" onclick="deleteCompItem(${idx})" title="حذف هذا البند" class="text-slate-500 hover:text-rose-400 p-1 text-xs transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="col-span-2">
+                                <span class="text-[10px] text-slate-400 block mb-0.5 font-bold">المطلوب لقضائه:</span>
+                                <input type="text" value="${c.targetRequired || ''}" onchange="updateCompField(${idx}, 'targetRequired', this.value)" class="w-full text-xs font-bold p-2 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-400" placeholder="المقدار المطلوب لقضائه...">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-0.5 font-bold">كم قضيت وأنجزت:</span>
+                                <input type="text" value="${c.progressAmount || ''}" onchange="updateCompField(${idx}, 'progressAmount', this.value)" class="w-full text-xs font-bold p-2 rounded-xl bg-slate-950 border border-slate-800 text-amber-300 outline-none focus:border-amber-400" placeholder="مثال: أنجزت 45 دقيقة...">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="button" onclick="toggleCompStatus(${idx})" class="w-full py-2 px-2 rounded-xl text-xs font-black shadow transition ${
+                                    isDone ? 'bg-slate-800 text-slate-300 border border-slate-700' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20'
+                                }">
+                                    ${isDone ? 'إعادة كـ (قيد الاستدراك)' : 'تأكيد التعويض (خاتم ✓)'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10.5px]">
+                            <span class="text-slate-400 font-bold">إرفاق هذا التعويض بتقرير الأستاذ:</span>
+                            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-cyan-300">
+                                <input type="checkbox" ${c.allowInPdf ? 'checked' : ''} onchange="toggleCompPdfPermission(${idx}, this.checked)" class="w-3.5 h-3.5 accent-cyan-500 rounded">
+                                <span>موافق على عرضه في الـ PDF</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // ================== المحرك الديناميكي للمعايير وبنك الأسئلة ==================
+        let activeRubricContext = null;
+        let activeRubricAnswers = [];
+
+        function getActiveRubricQuestions(bIdx, taskKey) {
+            if (!state.rubricsBank) state.rubricsBank = createDefaultRubricsBank();
+            const key = `${bIdx}_${taskKey}`;
+            if (!state.rubricsBank[key] || !Array.isArray(state.rubricsBank[key])) {
+                state.rubricsBank[key] = [
+                    "تحقيق واستيعاب المطلب الأساسي للواجب بدقة",
+                    "ضبط القيود العلمية ومحاكمة الأدلة"
+                ];
+            }
+            return state.rubricsBank[key];
+        }
+
+        window.openDynamicRubricModal = function(bIdx, taskKey, scoreKey, taskTitle) {
+            activeRubricContext = { bIdx, taskKey, scoreKey, taskTitle };
+            const cfg = state.booksConfig[bIdx] || { title: `المادة (${bIdx + 1})` };
+            const day = getCurrentDay();
+            const bk = day ? day.books[bIdx] : null;
+
+            document.getElementById("rubricModalTaskTitle").textContent = `معايير: ${taskTitle}`;
+            document.getElementById("rubricModalBookTitle").textContent = `المادة: ${cfg.title}`;
+            document.getElementById("newRubricQuestionInput").value = "";
+
+            const questions = getActiveRubricQuestions(bIdx, taskKey);
+            const savedAnswers = (bk && bk.rubricAnswers && bk.rubricAnswers[taskKey]) ? bk.rubricAnswers[taskKey] : [];
+
+            activeRubricAnswers = questions.map((_, i) => !!savedAnswers[i]);
+            const existingScore = (bk && bk[scoreKey] !== "" && bk[scoreKey] !== undefined) ? parseInt(bk[scoreKey]) : null;
+            if (existingScore !== null && savedAnswers.length === 0 && questions.length > 0) {
+                const yesCount = Math.round((existingScore / 100) * questions.length);
+                activeRubricAnswers = questions.map((_, i) => i < yesCount);
+            }
+
+            renderDynamicRubricQuestions();
+            document.getElementById("dynamicRubricModal").classList.remove("hidden");
+        };
+
+        window.closeDynamicRubricModal = function() {
+            document.getElementById("dynamicRubricModal").classList.add("hidden");
+            activeRubricContext = null;
+        };
+
+        window.setDynamicRubricAnswer = function(qIdx, isYes) {
+            activeRubricAnswers[qIdx] = isYes;
+            renderDynamicRubricQuestions();
+        };
+
+        window.addNewQuestionToActiveRubric = function() {
+            if (!activeRubricContext) return;
+            const input = document.getElementById("newRubricQuestionInput");
+            const val = input.value.trim();
+            if (!val) return;
+
+            const { bIdx, taskKey } = activeRubricContext;
+            const questions = getActiveRubricQuestions(bIdx, taskKey);
+            questions.push(val);
+            activeRubricAnswers.push(true);
+            input.value = "";
+
+            triggerAutoSave();
+            renderDynamicRubricQuestions();
+        };
+
+        window.deleteQuestionFromActiveRubric = function(qIdx) {
+            if (!activeRubricContext) return;
+            const { bIdx, taskKey } = activeRubricContext;
+            const questions = getActiveRubricQuestions(bIdx, taskKey);
+            if (questions.length <= 1) {
+                alert("يجب إبقاء معيار واحد على الأقل.");
+                return;
+            }
+            questions.splice(qIdx, 1);
+            activeRubricAnswers.splice(qIdx, 1);
+
+            triggerAutoSave();
+            renderDynamicRubricQuestions();
+        };
+
+        function renderDynamicRubricQuestions() {
+            if (!activeRubricContext) return;
+            const { bIdx, taskKey } = activeRubricContext;
+            const questions = getActiveRubricQuestions(bIdx, taskKey);
+            const container = document.getElementById("dynamicQuestionsContainer");
+            if (!container) return;
+
+            const totalQ = questions.length;
+            const yesCount = activeRubricAnswers.filter(Boolean).length;
+            const liveScore = totalQ > 0 ? Math.round((yesCount / totalQ) * 100) : 0;
+            const weightPerQ = totalQ > 0 ? (100 / totalQ).toFixed(1).replace(".0", "") : 0;
+
+            document.getElementById("rubricLiveScoreDisplay").textContent = liveScore;
+            document.getElementById("rubricPerQuestionWeight").textContent = `إجمالي المعايير: ${totalQ} • كل معيار = ${weightPerQ}%`;
+
+            container.innerHTML = questions.map((qText, idx) => {
+                const isYes = !!activeRubricAnswers[idx];
+                return `
+                    <div class="p-2.5 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-2">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="font-black text-slate-200 leading-snug flex-1">
+                                <span class="text-cyan-400 font-black ml-1">${idx + 1}.</span>
+                                <span>${qText}</span>
+                            </div>
+                            <button type="button" onclick="deleteQuestionFromActiveRubric(${idx})" title="حذف" class="text-slate-600 hover:text-rose-400 p-1 text-xs shrink-0">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-2 justify-end pt-1">
+                            <button type="button" onclick="setDynamicRubricAnswer(${idx}, true)" class="px-3.5 py-1.5 rounded-xl font-black text-xs ${
+                                isYes ? "bg-emerald-500 text-slate-950 border border-emerald-400 shadow-md" : "bg-slate-950 border border-slate-800 text-slate-500"
+                            }">نعم (+${weightPerQ}%)</button>
+                            <button type="button" onclick="setDynamicRubricAnswer(${idx}, false)" class="px-3.5 py-1.5 rounded-xl font-black text-xs ${
+                                !isYes ? "bg-rose-600/80 text-white border border-rose-500 shadow-md" : "bg-slate-950 border border-slate-800 text-slate-500"
+                            }">لا (0%)</button>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        window.applyDynamicRubricScore = function() {
+            if (!activeRubricContext) return;
+            const { bIdx, taskKey, scoreKey } = activeRubricContext;
+            const day = getCurrentDay();
+            if (!day) return;
+
+            const questions = getActiveRubricQuestions(bIdx, taskKey);
+            const totalQ = questions.length;
+            const yesCount = activeRubricAnswers.filter(Boolean).length;
+            const finalScore = totalQ > 0 ? Math.round((yesCount / totalQ) * 100) : 0;
+
+            const bk = day.books[bIdx];
+            bk[scoreKey] = finalScore;
+            bk[taskKey] = (finalScore > 0);
+            if (!bk.rubricAnswers) bk.rubricAnswers = {};
+            bk.rubricAnswers[taskKey] = [...activeRubricAnswers];
+
+            triggerAutoSave();
+            closeDynamicRubricModal();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        // ================== إدارة الجدول اليومي بالساعات ==================
+        window.addNewScheduleRow = function() {
+            const day = getCurrentDay();
+            if (!day) return;
+            if (!day.customSchedule) day.customSchedule = [];
+            day.customSchedule.push({ id: Date.now(), time: "00:00 - 00:00", task: "مهمة دراسية جديدة", done: false, score: 100 });
+            triggerAutoSave();
+            if (typeof window.renderScheduleView === "function") window.renderScheduleView();
+        };
+
+        window.toggleScheduleDone = function(index) {
+            const day = getCurrentDay();
+            if (!day || !day.customSchedule || !day.customSchedule[index]) return;
+            day.customSchedule[index].done = !day.customSchedule[index].done;
+            triggerAutoSave();
+            if (typeof window.renderScheduleView === "function") window.renderScheduleView();
+        };
+
+        window.updateScheduleField = function(index, field, value) {
+            const day = getCurrentDay();
+            if (!day || !day.customSchedule || !day.customSchedule[index]) return;
+            day.customSchedule[index][field] = value;
+            triggerAutoSave();
+        };
+
+        window.updateScheduleScore = function(index, val) {
+            const day = getCurrentDay();
+            if (!day || !day.customSchedule || !day.customSchedule[index]) return;
+            day.customSchedule[index].score = val === "" ? 0 : Math.min(100, Math.max(0, parseInt(val) || 0));
+            triggerAutoSave();
+            if (typeof window.renderScheduleView === "function") window.renderScheduleView();
+        };
+
+        window.deleteScheduleRow = function(index) {
+            const day = getCurrentDay();
+            if (!day || !day.customSchedule || !day.customSchedule[index]) return;
+            day.customSchedule.splice(index, 1);
+            triggerAutoSave();
+            if (typeof window.renderScheduleView === "function") window.renderScheduleView();
+        };
+
+        // ================== الملاحة والتفاعل العام ==================
+        window.switchMainTab = function(tabName) {
+            activeTab = tabName;
+            ["home", "weeks", "retention", "schedule", "stats"].forEach(t => {
+                const sec = document.getElementById("view-" + t);
+                const nav = document.getElementById("nav-" + t);
+                if (sec) sec.classList.toggle("hidden", t !== tabName);
+                if (nav) {
+                    nav.className = (t === tabName)
+                        ? "flex flex-col items-center justify-center py-2 rounded-2xl text-cyan-400 bg-indigo-950/70 border border-cyan-400/35 shadow-md transition"
+                        : "flex flex-col items-center justify-center py-2 rounded-2xl text-slate-400 hover:text-white transition";
+                }
+            });
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.jumpToTodayInWeeks = function() {
+            autoHighlightToday();
+            switchMainTab("weeks");
+        };
+
+        window.addNewWeek = function() {
+            const currentW = getCurrentWeek();
+            if (currentW && !state.archives.some(a => a.id === currentW.id)) {
+                state.archives.unshift({
+                    ...JSON.parse(JSON.stringify(currentW)),
+                    archivedAt: new Date().toLocaleDateString("ar-IQ"),
+                    score: calculateWeekScore(currentW)
+                });
+            }
+            const lastWeek = state.weeks[state.weeks.length - 1];
+            const nextSat = new Date(lastWeek.days[6].isoDate);
+            nextSat.setDate(nextSat.getDate() + 1);
+
+            const newW = createNewWeekObject(state.weeks.length + 1, nextSat);
+            state.weeks.push(newW);
+            state.activeWeekId = newW.id;
+            state.activeDayIndex = 0;
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.openAddSubjectModal = function() {
+            document.getElementById("newSubTitle").value = "";
+            document.getElementById("newSubTeacher").value = "سماحة الشيخ المدرس";
+            document.getElementById("newSubP1").value = "الشيخ المباحث";
+            document.getElementById("newSubTime").value = "08:00 ص";
+            document.getElementById("addSubjectModal").classList.remove("hidden");
+        };
+        window.closeAddSubjectModal = function() { document.getElementById("addSubjectModal").classList.add("hidden"); };
+        window.confirmAddSubject = function() {
+            const title = document.getElementById("newSubTitle").value.trim();
+            if (!title) { alert("يرجى كتابة اسم المادة."); return; }
+            const teacher = document.getElementById("newSubTeacher").value.trim() || "سماحة الشيخ المدرس";
+            const p1 = document.getElementById("newSubP1").value.trim() || "الشيخ المباحث";
+            const lTime = document.getElementById("newSubTime").value.trim() || "08:00 ص";
+
+            const newIdx = state.booksConfig.length;
+            state.booksConfig.push({ title, teacher, partner1: p1, partner2: "الشيخ المباحث 2", defaultLessonTime: lTime, defaultDiscussTime: "10:00 ص" });
+            state.retentionStages[newIdx] = createDefaultRetentionForBook();
+
+            state.weeks.forEach(w => {
+                (w.days || []).forEach(d => {
+                    if (!d.books) d.books = {};
+                    d.books[newIdx] = normalizeBook({ lessonTime: lTime, discussTime: "10:00 ص" });
+                });
+            });
+
+            state.activeSubjectIndex = newIdx;
+            state.retentionSubjectIndex = newIdx;
+            triggerAutoSave();
+            closeAddSubjectModal();
+            switchMainTab("weeks");
+        };
+
+        window.selectActiveSubject = function(idx) {
+            state.activeSubjectIndex = parseInt(idx) || 0;
+            triggerAutoSave();
+            if (typeof window.renderWeeksView === "function") window.renderWeeksView();
+        };
+
+        window.selectRetentionSubject = function(idx) {
+            state.retentionSubjectIndex = parseInt(idx) || 0;
+            if (typeof window.renderRetentionView === "function") window.renderRetentionView();
+        };
+
+        window.changeActiveWeek = function(id) {
+            state.activeWeekId = id;
+            autoHighlightToday();
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.selectDay = function(idx) {
+            state.activeDayIndex = idx;
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.toggleDayHoliday = function(isHoliday) {
+            const day = getCurrentDay();
+            if (!day) return;
+            day.isHoliday = isHoliday;
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.toggleBookCompleted = function(bIdx) {
+            const day = getCurrentDay();
+            if (!day) return;
+            day.books[bIdx].isBookCompleted = !day.books[bIdx].isBookCompleted;
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.cycleTeacherStatus = function(bIdx) {
+            const day = getCurrentDay();
+            if (!day) return;
+            const seq = ["present", "absent", "ended", "holiday", "none"];
+            const cur = day.books[bIdx].teacherStatus || "present";
+            const nextStatus = seq[(seq.indexOf(cur) + 1) % seq.length];
+            day.books[bIdx].teacherStatus = nextStatus;
+
+            checkAndSyncCompensations(day, bIdx);
+
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.cyclePartnerStatus = function(bIdx) {
+            const day = getCurrentDay();
+            if (!day) return;
+            const seq = ["present", "absent", "none"];
+            const cur = day.books[bIdx].partnerStatus || "present";
+            const nextStatus = seq[(seq.indexOf(cur) + 1) % seq.length];
+            day.books[bIdx].partnerStatus = nextStatus;
+
+            checkAndSyncCompensations(day, bIdx);
+
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.updateBookField = function(bIdx, field, val) {
+            const day = getCurrentDay();
+            if (!day) return;
+            day.books[bIdx][field] = val;
+            triggerAutoSave();
+        };
+
+        window.toggleScheduledReview = function(bIdx, rIdx) {
+            const day = getCurrentDay();
+            if (!day) return;
+            day.books[bIdx].scheduledReviews[rIdx] = !day.books[bIdx].scheduledReviews[rIdx];
+
+            checkAndSyncCompensations(day, bIdx);
+
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.toggleRetentionCheck = function(bIdx, stageKey, idx1, idx2) {
+            state.retentionStages[bIdx] = normalizeRetention(state.retentionStages[bIdx]);
+            if (stageKey === "secondary" && typeof idx2 === "number") {
+                state.retentionStages[bIdx].secondary[idx1][idx2] = !state.retentionStages[bIdx].secondary[idx1][idx2];
+            } else {
+                state.retentionStages[bIdx][stageKey][idx1] = !state.retentionStages[bIdx][stageKey][idx1];
+            }
+            triggerAutoSave();
+            if (typeof window.renderRetentionView === "function") window.renderRetentionView();
+        };
+
+        window.handleFileUpload = function(bIdx, input) {
+            if (input.files && input.files[0]) {
+                const day = getCurrentDay();
+                if (!day) return;
+                day.books[bIdx].attachedFileName = input.files[0].name;
+                day.books[bIdx].summary = true;
+                if (day.books[bIdx].summaryScore === "") day.books[bIdx].summaryScore = 100;
+                triggerAutoSave();
+                if (typeof window.renderApp === "function") window.renderApp();
+            }
+        };
+
+        window.removeFile = function(bIdx) {
+            const day = getCurrentDay();
+            if (!day) return;
+            day.books[bIdx].attachedFileName = "";
+            triggerAutoSave();
+            if (typeof window.renderApp === "function") window.renderApp();
+        };
+
+        window.toggleSelectAllPdfInclusions = function(check) {
+            const ids = [
+                "pdf_inc_prep", "pdf_inc_attend", "pdf_inc_discuss", "pdf_inc_summary",
+                "pdf_inc_custom_tasks", "pdf_inc_reviews", "pdf_inc_retention",
+                "pdf_inc_notes", "pdf_inc_scores", "pdf_inc_total_score"
+            ];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.checked = check;
+            });
+        };
+    </script>
+    <!-- الجزء الثالث والأخير: دوال العرض والرسم ومحرك PDF A4 التفاعلي المعتمد (3 من 3) -->
+    <script>
+        // ================== تحديث شارات وبيانات اليوم المحدد ==================
+        function updateHomeAndDayBadges() {
+            const day = getCurrentDay(), week = getCurrentWeek();
+            if (!day || !week) return;
+
+            const dScore = calculateDayScore(day);
+            const wScore = calculateWeekScore(week);
+
+            const hTitle = document.getElementById("homeDayTitle");
+            const hSub = document.getElementById("homeDateSubtitle");
+            const hScore = document.getElementById("homeDayScore");
+            const hCircle = document.getElementById("homeDayCircle");
+            const hwScore = document.getElementById("homeWeekScore");
+            const hBooksCnt = document.getElementById("homeActiveBooksCount");
+
+            if (hTitle) hTitle.textContent = `يوم ${day.dayName}`;
+            if (hSub) hSub.textContent = `${day.hijri} • ${day.gregorian}`;
+            if (hScore) hScore.textContent = dScore + "%";
+            if (hCircle) hCircle.setAttribute("stroke-dasharray", `${dScore}, 100`);
+            if (hwScore) hwScore.textContent = wScore + "%";
+
+            let activeCnt = 0;
+            for (let b = 0; b < state.booksConfig.length; b++) {
+                if (!normalizeBook(day.books[b]).isBookCompleted) activeCnt++;
+            }
+            if (hBooksCnt) hBooksCnt.textContent = `${activeCnt} مواد`;
+        }
+
+        // ================== 1. عرض الصفحة الرئيسية ==================
+        window.renderHomeView = function() {
+            updateHomeAndDayBadges();
+            const week = getCurrentWeek(), day = getCurrentDay();
+            if (!week || !day) return;
+
+            const strip = document.getElementById("homeDaysStrip");
+            if (strip) {
+                strip.innerHTML = "";
+                week.days.forEach((d, idx) => {
+                    const active = idx === state.activeDayIndex;
+                    const todayFlag = isDayToday(d, idx);
+                    const sc = calculateDayScore(d);
+
+                    // فحص رصد التعويضات لهذا اليوم
+                    let hasPendingComp = false;
+                    for (let b = 0; b < state.booksConfig.length; b++) {
+                        const bk = normalizeBook(d.books ? d.books[b] : null);
+                        if (bk.compensations && bk.compensations.some(c => c.status === "pending")) {
+                            hasPendingComp = true;
+                            break;
+                        }
+                    }
+
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.onclick = () => selectDay(idx);
+                    btn.className = `min-w-[84px] p-2.5 rounded-2xl text-center transition relative ${
+                        active ? "bg-gradient-to-b from-indigo-600 to-violet-700 text-white shadow-lg" : "glass-pill text-slate-300"
+                    } ${todayFlag ? "today-glow" : ""} ${hasPendingComp ? "comp-glow" : ""}`;
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-between text-[8px] font-black mb-0.5">
+                            <span class="${todayFlag ? "text-cyan-300" : "text-transparent"}">● اليوم</span>
+                            ${hasPendingComp ? '<span class="text-amber-400 font-black animate-pulse">تعويض ⚠️</span>' : ''}
+                        </div>
+                        <div class="text-xs font-black">${d.dayName}</div>
+                        <div class="text-[10px] font-bold mt-1 ${active ? "text-cyan-200" : "text-slate-400"}">${d.isHoliday ? "عطلة" : sc + "%"}</div>
+                    `;
+                    strip.appendChild(btn);
+                });
+            }
+
+            const overview = document.getElementById("homeSubjectsOverview");
+            if (overview) {
+                overview.innerHTML = "";
+                state.booksConfig.forEach((cfg, bIdx) => {
+                    const bk = normalizeBook(day.books[bIdx]);
+                    const bScore = calculateBookScore(bk);
+
+                    let doneCount = [bk.prep, bk.attend, bk.discuss, bk.summary].filter(Boolean).length;
+                    (bk.customTasks || []).forEach(ct => { if (ct.done) doneCount++; });
+                    const totalTasksCount = 4 + (bk.customTasks || []).length;
+                    const revCnt = (bk.scheduledReviews || []).filter(Boolean).length;
+
+                    const compList = bk.compensations || [];
+                    const pendingComps = compList.filter(c => c.status === "pending").length;
+                    const completedComps = compList.filter(c => c.status === "completed").length;
+
+                    const item = document.createElement("div");
+                    item.onclick = () => {
+                        state.activeSubjectIndex = bIdx;
+                        switchMainTab("weeks");
+                    };
+                    item.className = "glass-card rounded-2xl p-3.5 flex items-center justify-between cursor-pointer hover:border-cyan-400/50 transition";
+                    item.innerHTML = `
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full ${bk.isBookCompleted ? "bg-amber-400" : "bg-cyan-400"}"></span>
+                                <h4 class="text-xs font-black text-white">${cfg.title}</h4>
+                                ${compList.length > 0 ? `
+                                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${pendingComps > 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300'}">
+                                        ${pendingComps > 0 ? `تعويض (${pendingComps}) ⚠️` : `معوّض بالكامل (${completedComps}) ✓`}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <p class="text-[10px] text-slate-400 font-bold">
+                                الواجبات: <strong class="text-emerald-400">${doneCount}/${totalTasksCount}</strong> • المراجعة المقررة: <strong class="text-indigo-300">${revCnt}/5</strong>
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black px-2.5 py-1 rounded-xl ${bScore >= 70 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-slate-800 text-slate-300"}">${bScore}%</span>
+                            <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
+                        </div>
+                    `;
+                    overview.appendChild(item);
+                });
+            }
+        };
+
+        // ================== 2. عرض شاشة الأسابيع والمادة ==================
+        window.renderWeeksView = function() {
+            const week = getCurrentWeek(), day = getCurrentDay();
+            if (!week || !day) return;
+
+            const wSel = document.getElementById("weekSelector");
+            if (wSel) {
+                wSel.innerHTML = "";
+                state.weeks.forEach(w => {
+                    const opt = document.createElement("option");
+                    opt.value = w.id;
+                    opt.textContent = `${w.title} (${w.days[0].dayName} - ${w.days[6].dayName})`;
+                    if (w.id === state.activeWeekId) opt.selected = true;
+                    wSel.appendChild(opt);
+                });
+            }
+
+            const dTabs = document.getElementById("daysTabsContainer");
+            if (dTabs) {
+                dTabs.innerHTML = "";
+                week.days.forEach((d, idx) => {
+                    const isActive = idx === state.activeDayIndex;
+                    const todayFlag = isDayToday(d, idx);
+                    const score = calculateDayScore(d);
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.onclick = () => selectDay(idx);
+                    btn.className = `min-w-[92px] p-2.5 rounded-2xl text-right transition ${
+                        isActive ? "bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-lg" : "glass-pill text-slate-300"
+                    } ${todayFlag ? "today-glow" : ""}`;
+                    btn.innerHTML = `
+                        <div class="flex justify-between items-center text-[11px] font-black">
+                            <span>${d.dayName}</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? "bg-black/30 text-cyan-300" : "bg-slate-800 text-slate-300"}">${d.isHoliday ? "عطلة" : score + "%"}</span>
+                        </div>
+                        <div class="text-[9px] mt-1 truncate ${isActive ? "text-indigo-100" : "text-slate-400"}">${todayFlag ? "★ اليوم • " + d.hijri : d.hijri}</div>
+                    `;
+                    dTabs.appendChild(btn);
+                });
+            }
+
+            const todayFlag = isDayToday(day, state.activeDayIndex);
+            const curNameEl = document.getElementById("currentDayName");
+            if (curNameEl) curNameEl.textContent = `مهام يوم ${day.dayName}`;
+            const curHijriEl = document.getElementById("currentDayHijri");
+            if (curHijriEl) curHijriEl.textContent = day.hijri;
+            const curGregEl = document.getElementById("currentDayGregorian");
+            if (curGregEl) curGregEl.textContent = day.gregorian;
+            const holToggleEl = document.getElementById("dayHolidayToggle");
+            if (holToggleEl) holToggleEl.checked = !!day.isHoliday;
+            const holPillEl = document.getElementById("holidayPill");
+            if (holPillEl) holPillEl.classList.toggle("hidden", !day.isHoliday);
+            const todayPillEl = document.getElementById("todayActivePill");
+            if (todayPillEl) todayPillEl.classList.toggle("hidden", !todayFlag);
+
+            if (state.activeSubjectIndex >= state.booksConfig.length) state.activeSubjectIndex = 0;
+
+            const subSel = document.getElementById("subjectSelectorBar");
+            const subPills = document.getElementById("subjectQuickPills");
+            if (subSel) {
+                subSel.innerHTML = "";
+                state.booksConfig.forEach((cfg, bIdx) => {
+                    const opt = document.createElement("option");
+                    opt.value = bIdx;
+                    opt.textContent = `المادة (${bIdx + 1}): ${cfg.title}`;
+                    if (bIdx === state.activeSubjectIndex) opt.selected = true;
+                    subSel.appendChild(opt);
+                });
+            }
+            if (subPills) {
+                subPills.innerHTML = "";
+                state.booksConfig.forEach((cfg, bIdx) => {
+                    const active = bIdx === state.activeSubjectIndex;
+                    const pill = document.createElement("button");
+                    pill.type = "button";
+                    pill.onclick = () => selectActiveSubject(bIdx);
+                    pill.className = `whitespace-nowrap px-3 py-1.5 rounded-xl text-[10.5px] font-black transition ${
+                        active ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30" : "bg-slate-900/90 text-slate-400 border border-slate-800"
+                    }`;
+                    pill.textContent = cfg.title.split("(")[0].trim();
+                    subPills.appendChild(pill);
+                });
+            }
+
+            const b = state.activeSubjectIndex;
+            const bk = normalizeBook(day.books[b]);
+            day.books[b] = bk;
+            const cfg = state.booksConfig[b];
+            const tStatus = teacherStatusConfig[bk.teacherStatus] || teacherStatusConfig.present;
+            const pStatus = partnerStatusConfig[bk.partnerStatus] || partnerStatusConfig.present;
+
+            // تحديث وفحص رصد التعويضات تلقائياً
+            checkAndSyncCompensations(day, b);
+            const compList = bk.compensations || [];
+            const pendingComps = compList.filter(c => c.status === "pending").length;
+            const completedComps = compList.filter(c => c.status === "completed").length;
+
+            const container = document.getElementById("singleBookContainer");
+            if (!container) return;
+            container.innerHTML = `
+                <div class="glass-card rounded-3xl p-4 space-y-4 ${bk.isBookCompleted ? "border-amber-500/50" : "neon-border"}">
+                    <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <span class="text-[10px] font-black text-cyan-400">المادة المختارة (${b + 1} من ${state.booksConfig.length})</span>
+                            <h4 class="font-black text-sm text-white mt-0.5">${cfg.title}</h4>
+                            <p class="text-[10.5px] text-slate-400 font-bold mt-0.5">
+                                الأستاذ: <strong class="text-slate-200">${cfg.teacher}</strong> | المباحث: <strong class="text-slate-200">${cfg.partner1}</strong>
+                            </p>
+                        </div>
+                        <span class="text-xs font-black px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">${calculateBookScore(bk)}%</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 bg-slate-900/80 p-2.5 rounded-2xl border border-slate-800">
+                        <div>
+                            <span class="text-[9.5px] font-bold text-slate-400 block mb-1">حالة الأستاذ:</span>
+                            <button type="button" onclick="cycleTeacherStatus(${b})" class="w-full text-[10.5px] font-black py-2 px-1.5 rounded-xl transition ${tStatus.bg}">${tStatus.text}</button>
+                        </div>
+                        <div>
+                            <span class="text-[9.5px] font-bold text-slate-400 block mb-1">حالة المباحث:</span>
+                            <button type="button" onclick="cyclePartnerStatus(${b})" class="w-full text-[10.5px] font-black py-2 px-1.5 rounded-xl transition ${pStatus.bg}">${pStatus.text}</button>
+                        </div>
+                        <div>
+                            <span class="text-[9.5px] font-bold text-slate-400 block mb-1">حالة الكتاب:</span>
+                            <button type="button" onclick="toggleBookCompleted(${b})" class="w-full text-[10.5px] font-black py-2 px-1.5 rounded-xl transition ${bk.isBookCompleted ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-300"}">
+                                ${bk.isBookCompleted ? "منتهي 🎓" : "قيد الدراسة 📖"}
+                            </button>
+                        </div>
+                        <div class="col-span-1">
+                            <span class="text-[9.5px] font-bold text-slate-400 block mb-1">وقت الدرس:</span>
+                            <input type="text" value="${bk.lessonTime || ""}" oninput="updateBookField(${b}, 'lessonTime', this.value)" class="w-full text-xs font-bold p-2 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none">
+                        </div>
+                        <div class="col-span-2">
+                            <span class="text-[9.5px] font-bold text-slate-400 block mb-1">وقت المباحثة:</span>
+                            <input type="text" value="${bk.discussTime || ""}" oninput="updateBookField(${b}, 'discussTime', this.value)" class="w-full text-xs font-bold p-2 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-black text-slate-300 block mb-1">موضوع الدرس لليوم:</label>
+                        <input type="text" placeholder="اكتب عنوان المطلب وباب المسألة..." value="${bk.topic || ""}" oninput="updateBookField(${b}, 'topic', this.value)" class="w-full text-xs font-bold p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-cyan-400">
+                    </div>
+
+                    <!-- بطاقة منظومة التعويض الذكية والمتطورة الشاملة -->
+                    <div onclick="openSmartCompModal(${b})" class="p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
+                        pendingComps > 0 
+                            ? 'bg-amber-950/40 border-amber-500/50 text-amber-300 comp-glow' 
+                            : (compList.length > 0 ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300' : 'bg-slate-900/60 border-slate-800 text-slate-400')
+                    }">
+                        <div class="space-y-0.5 flex-1 pr-1">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-arrows-rotate ${pendingComps > 0 ? 'text-amber-400 animate-spin' : (compList.length > 0 ? 'text-emerald-400' : 'text-slate-500')}"></i>
+                                <span class="text-xs font-black">منظومة التعويض والاستدراك الذكية:</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 font-bold">
+                                ${compList.length === 0 
+                                    ? 'لا توجد أي نواقص أو تعويضات مطلوبة (اضغط لإضافة تعويض حر)' 
+                                    : `الإجمالي: ${compList.length} بند • قيد الاستدراك: ${pendingComps} • تم التعويض: ${completedComps}`}
+                            </p>
+                        </div>
+                        <span class="text-[10px] font-black px-2.5 py-1 rounded-xl shrink-0 ${
+                            pendingComps > 0 
+                                ? 'bg-amber-500 text-slate-950 animate-pulse' 
+                                : (compList.length > 0 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400')
+                        }">
+                            ${pendingComps > 0 ? `تعويض (${pendingComps}) ⚠️` : (compList.length > 0 ? 'خاتم بالكامل ✓' : 'إدارة التعويض ⚙️')}
+                        </span>
+                    </div>
+
+                    <!-- قائمة الواجبات الأساسية الأربعة مع إمكانية تحرير الدرجة يدوياً وحرّاً -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between px-1">
+                            <span class="text-[11px] font-black text-cyan-300">الواجبات ومستويات التحصيل الأساسية:</span>
+                            <span class="text-[9.5px] text-slate-400">تحرير مباشر للدرجة كما تريد</span>
+                        </div>
+                        ${[
+                            { k: "prep", sk: "prepScore", lbl: "التحضير قبل الدرس", slbl: "فهم:" },
+                            { k: "attend", sk: "attendScore", lbl: "حضور الدرس عند الأستاذ", slbl: "فهم:" },
+                            { k: "discuss", sk: "discussScore", lbl: "مباحثة الدرس وتثبيته", slbl: "تقييم:" },
+                            { k: "summary", sk: "summaryScore", lbl: "تقرير الدرس وتدوينه", slbl: "تقييم:" }
+                        ].map(item => `
+                            <div class="flex items-center justify-between p-2.5 rounded-2xl border ${bk[item.k] ? "bg-emerald-950/40 border-emerald-500/40" : "bg-slate-900/60 border-slate-800"}">
+                                <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-white flex-1">
+                                    <input type="checkbox" ${bk[item.k] ? "checked" : ""} onchange="toggleTask(${b}, '${item.k}', '${item.sk}')" class="w-4 h-4 accent-emerald-500 rounded">
+                                    <span>${item.lbl}</span>
+                                </label>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <span class="text-[10px] text-slate-400 font-bold">${item.slbl}</span>
+                                    <input type="number" min="0" max="100" value="${(bk[item.sk] !== "" && bk[item.sk] !== undefined) ? bk[item.sk] : ""}" placeholder="0" oninput="handleDirectScoreInput(${b}, '${item.sk}', this.value)" class="w-12 text-center text-xs font-black p-1.5 rounded-xl bg-slate-950 border border-slate-700 text-cyan-300 outline-none focus:border-cyan-400">
+                                    <span class="text-[9px] text-slate-400">%</span>
+                                    <button type="button" onclick="openDynamicRubricModal(${b}, '${item.k}', '${item.sk}', '${item.lbl}')" title="تقييم المعايير" class="w-7 h-7 rounded-xl bg-slate-950 border border-cyan-500/40 text-cyan-400 hover:border-cyan-400 flex items-center justify-center text-[10px] shadow-sm">
+                                        <i class="fa-solid fa-list-check"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join("")}
+                    </div>
+
+                    <!-- قائمة الواجبات الإضافية المخصصة -->
+                    <div class="space-y-2 pt-1 border-t border-slate-800/80">
+                        <div class="flex items-center justify-between px-1">
+                            <span class="text-[11px] font-black text-indigo-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-list-ol"></i>
+                                <span>الواجبات والمهام الإضافية:</span>
+                            </span>
+                            <button type="button" onclick="openAddTaskModal(${b})" class="text-[10.5px] font-black text-cyan-300 bg-cyan-500/15 border border-cyan-400/30 px-2.5 py-1 rounded-xl hover:bg-cyan-500/25 transition">
+                                <i class="fa-solid fa-plus text-[9px] ml-0.5"></i> إضافة واجب آخر
+                            </button>
+                        </div>
+
+                        ${(bk.customTasks && bk.customTasks.length > 0) ? bk.customTasks.map(ct => `
+                            <div class="flex items-center justify-between p-2.5 rounded-2xl border ${ct.done ? "bg-indigo-950/40 border-indigo-500/40" : "bg-slate-900/60 border-slate-800"}">
+                                <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-white flex-1">
+                                    <input type="checkbox" ${ct.done ? "checked" : ""} onchange="toggleCustomTask(${b},${ct.id})" class="w-4 h-4 accent-indigo-500 rounded">
+                                    <span class="truncate">${ct.label}</span>
+                                </label>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <span class="text-[10px] text-slate-400 font-bold">الدرجة:</span>
+                                    <input type="number" min="0" max="100" value="${(ct.score !== "" && ct.score !== undefined) ? ct.score : ""}" placeholder="0" oninput="handleCustomTaskScore(${b},${ct.id}, this.value)" class="w-12 text-center text-xs font-black p-1.5 rounded-xl bg-slate-950 border border-slate-700 text-indigo-300 outline-none focus:border-indigo-400">
+                                    <span class="text-[9px] text-slate-400">%</span>
+                                    <button type="button" onclick="deleteCustomTask(${b},${ct.id})" title="حذف الواجب" class="w-7 h-7 rounded-xl bg-slate-950 border border-slate-800 hover:border-rose-500 text-slate-500 hover:text-rose-400 flex items-center justify-center text-xs transition">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join("") : `
+                            <div class="text-[10px] text-slate-500 bg-slate-900/40 p-2 rounded-xl text-center">
+                                لا توجد واجبات إضافية مضافة بعد. اضغط على (+ إضافة واجب آخر) لإضافة أي التزام دراسي إضافي.
+                            </div>
+                        `}
+                    </div>
+
+                    <div class="bg-indigo-950/40 p-3 rounded-2xl border border-indigo-500/30 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-black text-indigo-200">المرحلة الأولى: المراجعة المقررة (5/يوم):</span>
+                            <span class="text-[10px] text-cyan-300 font-black bg-slate-900 px-2 py-0.5 rounded-lg">${(bk.scheduledReviews || []).filter(Boolean).length} من 5</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-1.5">
+                            ${scheduledReviewLabels.map((lbl, rIdx) => {
+                                const chk = bk.scheduledReviews[rIdx];
+                                return `
+                                    <button type="button" onclick="toggleScheduledReview(${b},${rIdx})" class="py-2 px-1 rounded-xl border text-[10px] font-black transition ${
+                                        chk ? "bg-emerald-600 border-emerald-400 text-white" : "bg-slate-900 border-slate-800 text-slate-400"
+                                    }">
+                                        م${rIdx + 1}${chk ? "✓" : ""}
+                                    </button>
+                                `;
+                            }).join("")}
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5 pt-1">
+                        <div class="bg-indigo-950/40 border border-cyan-500/30 p-2.5 rounded-2xl space-y-1.5">
+                            <label class="text-[10.5px] font-black text-cyan-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-link text-xs"></i>
+                                <span>رابط تقرير المادة لفتحه وتحميله من ملف الـ PDF:</span>
+                            </label>
+                            <input type="url" placeholder="https://drive.google.com/..." value="${bk.reportUrl || ""}" oninput="updateBookField(${b}, 'reportUrl', this.value)" class="w-full text-xs font-bold p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 outline-none focus:border-cyan-400 text-left" dir="ltr">
+                        </div>
+
+                        ${bk.attachedFileName ? `
+                            <div class="flex items-center justify-between bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 px-3 py-2 rounded-xl text-xs font-bold">
+                                <span class="truncate">📎 ${bk.attachedFileName}</span>
+                                <button type="button" onclick="removeFile(${b})" class="text-rose-400"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        ` : `
+                            <label class="flex items-center justify-center gap-2 border border-dashed border-slate-700 bg-slate-900/50 py-2.5 rounded-xl cursor-pointer text-xs font-bold text-slate-300">
+                                <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i>
+                                <span>إرفاق ملف تقرير الدرس محلياً</span>
+                                <input type="file" class="hidden" onchange="handleFileUpload(${b}, this)">
+                            </label>
+                        `}
+                        <textarea placeholder="ملاحظات المطلب والدرس..." oninput="updateBookField(${b}, 'notes', this.value)" class="w-full text-xs font-medium p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white resize-none h-14 outline-none">${bk.notes || ""}</textarea>
+                    </div>
+                </div>
+            `;
+        };
+
+        // ================== 3. عرض سجل مراحل الترسيخ ==================
+        window.renderRetentionView = function() {
+            const sel = document.getElementById("retentionSubjectSelector");
+            if (state.retentionSubjectIndex >= state.booksConfig.length) state.retentionSubjectIndex = 0;
+
+            if (sel) {
+                sel.innerHTML = "";
+                state.booksConfig.forEach((cfg, bIdx) => {
+                    const opt = document.createElement("option");
+                    opt.value = bIdx;
+                    opt.textContent = `مراحل ترسيخ: ${cfg.title}`;
+                    if (bIdx === state.retentionSubjectIndex) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            }
+
+            const b = state.retentionSubjectIndex;
+            const cfg = state.booksConfig[b];
+            state.retentionStages[b] = normalizeRetention(state.retentionStages[b]);
+            const rData = state.retentionStages[b];
+
+            const container = document.getElementById("retentionSingleBookContainer");
+            if (!container) return;
+            container.innerHTML = `
+                <div class="glass-card rounded-3xl p-4 space-y-4 neon-border">
+                    <div class="border-b border-slate-800 pb-2.5 flex justify-between items-center">
+                        <h4 class="font-black text-sm text-white">${cfg.title}</h4>
+                        <span class="text-[10px] font-bold text-purple-300">${cfg.teacher}</span>
+                    </div>
+
+                    <div class="bg-indigo-950/40 p-3 rounded-2xl border border-indigo-500/30 space-y-2">
+                        <span class="text-xs font-black text-indigo-300 block">1. الترسيخ الأولي (كل يوم مرة لمدة 4 أيام):</span>
+                        <div class="grid grid-cols-4 gap-2">
+                            ${[1, 2, 3, 4].map((dNum, idx) => `
+                                <button type="button" onclick="toggleRetentionCheck(${b}, 'initial',${idx})" class="py-2 rounded-xl border text-xs font-black ${
+                                    rData.initial[idx] ? "bg-emerald-600 border-emerald-400 text-white" : "bg-slate-900 border-slate-800 text-slate-400"
+                                }">يوم ${dNum}${rData.initial[idx] ? "✓" : ""}</button>
+                            `).join("")}
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-950/30 p-3 rounded-2xl border border-emerald-500/30 space-y-2">
+                        <span class="text-xs font-black text-emerald-300 block">2. الترسيخ الثانوي (يوم وترك لمدة 5 أيام - 5 مراجعات/يوم):</span>
+                        <div class="space-y-2">
+                            ${[1, 2, 3, 4, 5].map((dayNum, dIdx) => `
+                                <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                                    <div class="text-[10.5px] font-black text-emerald-300 mb-1.5">يوم وترك (${dayNum})</div>
+                                    <div class="grid grid-cols-5 gap-1.5">
+                                        ${[1, 2, 3, 4, 5].map((revNum, rIdx) => `
+                                            <button type="button" onclick="toggleRetentionCheck(${b}, 'secondary', ${dIdx}, ${rIdx})" class="py-1.5 rounded-lg border text-[10px] font-black ${
+                                                rData.secondary[dIdx][rIdx] ? "bg-emerald-600 border-emerald-400 text-white" : "bg-slate-950 border-slate-800 text-slate-400"
+                                            }">م${revNum} ${rData.secondary[dIdx][rIdx] ? "✓" : ""}</button>
+                                        `).join("")}
+                                    </div>
+                                </div>
+                            `).join("")}
+                        </div>
+                    </div>
+
+                    <div class="bg-sky-950/40 p-3 rounded-2xl border border-sky-500/30 space-y-2">
+                        <span class="text-xs font-black text-sky-300 block">3. الترسيخ المتباعد 1 (كل أسبوع مرة لمدة 5 أسابيع):</span>
+                        <div class="grid grid-cols-5 gap-1.5">
+                            ${[1, 2, 3, 4, 5].map((wNum, idx) => `
+                                <button type="button" onclick="toggleRetentionCheck(${b}, 'spaced1',${idx})" class="py-2 rounded-xl border text-[10.5px] font-black ${ rData.spaced1[idx] ? "bg-sky-600 border-sky-400 text-white" : "bg-slate-900 border-slate-800 text-slate-400" }">أسبوع ${wNum}</button>
+                            `).join("")}
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-950/40 p-3 rounded-2xl border border-purple-500/30 space-y-2">
+                        <span class="text-xs font-black text-purple-300 block">4. الترسيخ المتباعد 2 (كل شهر مرة لمدة 5 أشهر):</span>
+                        <div class="grid grid-cols-5 gap-1.5">
+                            ${[1, 2, 3, 4, 5].map((mNum, idx) => `
+                                <button type="button" onclick="toggleRetentionCheck(${b}, 'spaced2',${idx})" class="py-2 rounded-xl border text-[10.5px] font-black ${ rData.spaced2[idx] ? "bg-purple-600 border-purple-400 text-white" : "bg-slate-900 border-slate-800 text-slate-400" }">شهر ${mNum}</button>
+                            `).join("")}
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        // ================== 4. عرض الجدول اليومي بالساعات ==================
+        window.renderScheduleView = function() {
+            const week = getCurrentWeek(), day = getCurrentDay();
+            if (!week || !day) return;
+
+            const titleEl = document.getElementById("scheduleDayHeaderTitle");
+            if (titleEl) titleEl.textContent = `الجدول اليومي بالساعات (${day.dayName})`;
+
+            const strip = document.getElementById("scheduleDaysStrip");
+            if (strip) {
+                strip.innerHTML = "";
+                week.days.forEach((d, idx) => {
+                    const active = idx === state.activeDayIndex;
+                    const todayFlag = isDayToday(d, idx);
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.onclick = () => selectDay(idx);
+                    btn.className = `min-w-[76px] p-2 rounded-xl text-center transition ${
+                        active ? "bg-gradient-to-tr from-cyan-500 to-indigo-600 text-slate-950 font-black shadow-md" : "glass-pill text-slate-300"
+                    } ${todayFlag ? "today-glow" : ""}`;
+                    btn.innerHTML = `
+                        <div class="text-[11px] font-black">${d.dayName}</div>
+                        <div class="text-[9px] mt-0.5 ${active ? "text-slate-900 font-bold" : "text-slate-400"}">${todayFlag ? "اليوم" : d.hijri.split(" ")[0]}</div>
+                    `;
+                    strip.appendChild(btn);
+                });
+            }
+
+            const container = document.getElementById("scheduleRowsContainer");
+            if (!container) return;
+
+            if (!day.customSchedule) day.customSchedule = [];
+            const sched = day.customSchedule;
+
+            if (sched.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-card rounded-2xl p-6 text-center text-slate-400 space-y-2">
+                        <i class="fa-regular fa-calendar-xmark text-2xl text-slate-500"></i>
+                        <p class="text-xs font-bold">لا توجد ساعات مضافة ليوم ${day.dayName}.</p>
+                        <button type="button" onclick="addNewScheduleRow()" class="px-3 py-1.5 text-xs font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 rounded-xl inline-block mt-1">
+                            + إضافة ساعة الآن
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const doneCount = sched.filter(s => s.done).length;
+            const avgScore = Math.round(sched.reduce((acc, cur) => acc + (parseInt(cur.score) || 0), 0) / sched.length);
+
+            let html = `
+                <div class="glass-card rounded-2xl p-3 flex items-center justify-between border border-cyan-500/20 bg-cyan-950/20">
+                    <div class="text-xs font-bold text-slate-300">المنجز: <strong class="text-emerald-400">${doneCount} من ${sched.length}</strong></div>
+                    <div class="text-xs font-bold text-slate-300">معدل تقييم الساعات: <strong class="text-cyan-300">${avgScore}%</strong></div>
+                </div>
+            `;
+
+            html += sched.map((row, idx) => `
+                <div class="glass-card p-3 rounded-2xl border transition ${row.done ? "bg-emerald-950/25 border-emerald-500/40" : "bg-slate-900/80 border-slate-800"} flex items-center justify-between gap-2.5">
+                    <label class="cursor-pointer flex items-center p-1">
+                        <input type="checkbox" ${row.done ? "checked" : ""} onchange="toggleScheduleDone(${idx})" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                    </label>
+                    <div class="flex-1 space-y-1">
+                        <input type="text" value="${row.time || ""}" onchange="updateScheduleField(${idx}, 'time', this.value)" class="w-full text-[11px] font-black text-cyan-300 bg-slate-950/60 px-2 py-1 rounded-lg border border-slate-800/80 outline-none focus:border-cyan-400" placeholder="الوقت">
+                        <input type="text" value="${row.task || ""}" onchange="updateScheduleField(${idx}, 'task', this.value)" class="w-full text-xs font-bold text-white bg-slate-950/60 px-2 py-1 rounded-lg border border-slate-800/80 outline-none focus:border-cyan-400" placeholder="المهمة والنشاط">
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center gap-1 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+                            <input type="number" min="0" max="100" value="${row.score !== undefined ? row.score : 100}" oninput="updateScheduleScore(${idx}, this.value)" class="w-8 text-center text-xs font-black text-cyan-300 bg-transparent outline-none">
+                            <span class="text-[9px] font-bold text-slate-500">%</span>
+                        </div>
+                        <button type="button" onclick="deleteScheduleRow(${idx})" title="حذف" class="w-7 h-7 rounded-lg bg-slate-800/60 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 text-xs flex items-center justify-center transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join("");
+
+            container.innerHTML = html;
+        };
+
+        // ================== 5. عرض لوحة الإحصاء التراكمي ==================
+        window.renderStatsView = function() {
+            const allWeeks = [...state.weeks, ...state.archives];
+            const daily = calculateDayScore(getCurrentDay());
+            const weekly = calculateWeekScore(getCurrentWeek());
+            const monthWeeks = allWeeks.slice(-4);
+            const monthly = monthWeeks.length ? Math.round(monthWeeks.reduce((a, w) => a + calculateWeekScore(w), 0) / monthWeeks.length) : weekly;
+            const yearWeeks = allWeeks.slice(-52);
+            const yearly = yearWeeks.length ? Math.round(yearWeeks.reduce((a, w) => a + calculateWeekScore(w), 0) / yearWeeks.length) : monthly;
+            const absolute = allWeeks.length ? Math.round(allWeeks.reduce((a, w) => a + calculateWeekScore(w), 0) / allWeeks.length) : weekly;
+
+            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setSvg = (id, val) => { const el = document.getElementById(id); if (el) el.setAttribute("stroke-dasharray", `${val}, 100`); };
+
+            setTxt("statDaily", daily + "%"); setSvg("svgStatDaily", daily);
+            setTxt("statWeekly", weekly + "%"); setSvg("svgStatWeekly", weekly);
+            setTxt("statMonthly", monthly + "%"); setSvg("svgStatMonthly", monthly);
+            setTxt("statYearly", yearly + "%"); setSvg("svgStatYearly", yearly);
+            setTxt("statAbsolute", absolute + "%"); setSvg("svgStatAbsolute", absolute);
+
+            const c = document.getElementById("booksDetailedStatsContainer");
+            if (c) {
+                c.innerHTML = "";
+                state.booksConfig.forEach((cfg, bIdx) => {
+                    let prepSum = 0, attendSum = 0, discussSum = 0, summarySum = 0, reviewsCount = 0, daysCount = 0;
+                    allWeeks.forEach(w => {
+                        (w.days || []).forEach(d => {
+                            const bk = normalizeBook(d.books ? d.books[bIdx] : null);
+                            if (!bk.isBookCompleted && bk.teacherStatus !== "none" && bk.teacherStatus !== "holiday" && !d.isHoliday) {
+                                prepSum += (bk.prep && bk.prepScore !== "") ? parseInt(bk.prepScore) : 0;
+                                attendSum += (bk.attend && bk.attendScore !== "") ? parseInt(bk.attendScore) : 0;
+                                discussSum += (bk.discuss && bk.discussScore !== "") ? parseInt(bk.discussScore) : 0;
+                                summarySum += (bk.summary && bk.summaryScore !== "") ? parseInt(bk.summaryScore) : 0;
+                                reviewsCount += (bk.scheduledReviews || []).filter(Boolean).length;
+                                daysCount++;
+                            }
+                        });
+                    });
+                    const totalDays = daysCount || 1;
+                    const pAvg = Math.round(prepSum / totalDays);
+                    const aAvg = Math.round(attendSum / totalDays);
+                    const dAvg = Math.round(discussSum / totalDays);
+                    const sAvg = Math.round(summarySum / totalDays);
+                    const rAvg = Math.round((reviewsCount / (totalDays * 5)) * 100);
+                    const overall = Math.round(((pAvg + aAvg + dAvg + sAvg) / 4) * 0.7 + rAvg * 0.3);
+
+                    c.innerHTML += `
+                        <div class="p-3 rounded-2xl glass-pill space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-black text-xs text-white">${cfg.title}</span>
+                                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300">${overall}%</span>
+                            </div>
+                            <div class="grid grid-cols-5 gap-1 text-center text-[9.5px] text-slate-300">
+                                <div class="bg-slate-900 p-1.5 rounded-lg">تحضير<br><strong class="text-cyan-400">${pAvg}%</strong></div>
+                                <div class="bg-slate-900 p-1.5 rounded-lg">حضور<br><strong class="text-cyan-400">${aAvg}%</strong></div>
+                                <div class="bg-slate-900 p-1.5 rounded-lg">مباحثة<br><strong class="text-cyan-400">${dAvg}%</strong></div>
+                                <div class="bg-slate-900 p-1.5 rounded-lg">تقرير<br><strong class="text-cyan-400">${sAvg}%</strong></div>
+                                <div class="bg-slate-900 p-1.5 rounded-lg">مراجعة<br><strong class="text-emerald-400">${rAvg}%</strong></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const arcList = document.getElementById("archiveListContainer");
+            if (arcList) {
+                arcList.innerHTML = state.archives.length === 0
+                    ? `<div class="text-xs text-slate-500 text-center py-4">لا توجد أسابيع مؤرشفة بعد.</div>`
+                    : state.archives.map(arc => `
+                        <div class="flex items-center justify-between p-3 rounded-2xl glass-pill">
+                            <div>
+                                <div class="font-black text-xs text-white">${arc.title}</div>
+                                <div class="text-[10px] text-slate-400">تاريخ الأرشفة: ${arc.archivedAt}</div>
+                            </div>
+                            <span class="text-xs font-black text-amber-300">${arc.score}%</span>
+                        </div>
+                    `).join("");
+            }
+        };
+
+        window.renderApp = function() {
+            renderHomeView();
+            renderWeeksView();
+            renderRetentionView();
+            renderScheduleView();
+            renderStatsView();
+        };
+
+        window.editBookNamesModal = function() {
+            const c = document.getElementById("bookConfigInputs");
+            if (!c) return;
+            c.innerHTML = "";
+            state.booksConfig.forEach((cfg, i) => {
+                c.innerHTML += `
+                    <div class="p-3 rounded-2xl glass-pill space-y-2 text-xs">
+                        <div class="font-black text-cyan-300">المادة (${i + 1})</div>
+                        <input id="cfg_t_${i}" value="${cfg.title}" placeholder="اسم الكتاب" class="w-full p-2 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="cfg_teach_${i}" value="${cfg.teacher}" placeholder="الأستاذ" class="w-full p-2 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none">
+                            <input id="cfg_p1_${i}" value="${cfg.partner1}" placeholder="المباحث" class="w-full p-2 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none">
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById("bookModal").classList.remove("hidden");
+        };
+        window.closeBookModal = function() { document.getElementById("bookModal").classList.add("hidden"); };
+        window.saveBookConfig = function() {
+            for (let i = 0; i < state.booksConfig.length; i++) {
+                const tEl = document.getElementById(`cfg_t_${i}`);
+                const teachEl = document.getElementById(`cfg_teach_${i}`);
+                const p1El = document.getElementById(`cfg_p1_${i}`);
+                if (tEl) state.booksConfig[i].title = tEl.value.trim();
+                if (teachEl) state.booksConfig[i].teacher = teachEl.value.trim();
+                if (p1El) state.booksConfig[i].partner1 = p1El.value.trim();
+            }
+            triggerAutoSave();
+            closeBookModal();
+            renderApp();
+        };
+
+        window.openExportModal = function() {
+            const list = document.getElementById("customDaysList");
+            const curW = getCurrentWeek();
+            if (list && curW && curW.days) {
+                list.innerHTML = "";
+                curW.days.forEach((d, idx) => {
+                    list.innerHTML += `
+                        <label class="flex items-center gap-1.5 p-2 rounded-xl glass-pill text-xs text-white">
+                            <input type="checkbox" name="cDay" value="${idx}"> <span>${d.dayName}</span>
+                        </label>
+                    `;
+                });
+            }
+            document.getElementById("exportModal").classList.remove("hidden");
+        };
+        window.closeExportModal = function() { document.getElementById("exportModal").classList.add("hidden"); };
+        window.toggleScopeInputs = function() {
+            const s = document.querySelector('input[name="reportScope"]:checked');
+            const w = document.getElementById("customDaysWrapper");
+            if (s && w) w.classList.toggle("hidden", s.value !== "custom");
+        };
+
+        function parseBookTitle(fullTitle) {
+            const match = String(fullTitle || "").match(/^(.*?)[(（](.*?)[)）]$/);
+            return match ? { main: match[1].trim(), sub: match[2].trim() } : { main: fullTitle, sub: "" };
+        }
+
+        // ================== محرك رسم صفحة الـ A4 المباشر ==================
+        function drawRoundedBox(ctx, x, y, w, h, r, fillColor, borderColor, borderWidth = 1) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            if (fillColor) { ctx.fillStyle = fillColor; ctx.fill(); }
+            if (borderColor) { ctx.strokeStyle = borderColor; ctx.lineWidth = borderWidth; ctx.stroke(); }
+        }
+
+        function fitArabicText(ctx, text, maxWidth) {
+            const str = String(text || "");
+            if (ctx.measureText(str).width <= maxWidth) return str;
+            let trimmed = str;
+            while (trimmed.length > 0 && ctx.measureText(trimmed + "...").width > maxWidth) {
+                trimmed = trimmed.slice(0, -1);
+            }
+            return trimmed + "...";
+        }
+
+        // رسم كروت الـ PDF وتطبيق قيود وموافقة التعويضات بدقة
+        function renderDayToCanvas(d, bookChunk, inclusions, compFilter) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 1588;
+            canvas.height = 2246;
+            const ctx = canvas.getContext("2d");
+            ctx.scale(2, 2);
+            const W = 794, H = 1123;
+            const pdfLinks = [];
+
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, W, H);
+            ctx.direction = "rtl";
+
+            const dScore = calculateDayScore(d);
+            const isOff = d.isHoliday || d.dayName === "الخميس" || d.dayName === "الجمعة";
+            const studentName = currentUser ? (currentUser.displayName || currentUser.email) : "علي عقيل العبادي";
+
+            drawRoundedBox(ctx, W - 60, 18, 38, 38, 10, "#4338ca", null);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 18px Tajawal, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("★", W - 41, 43);
+
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "900 18px Tajawal, sans-serif";
+            ctx.fillText("مُنجز المباحث والدروس الحوزوية", W - 70, 34);
+
+            ctx.fillStyle = "#475569";
+            ctx.font = "bold 11px Tajawal, sans-serif";
+            ctx.fillText(`الطالب: ${studentName}   •   المشرف: سماحة الأستاذ المشرف حفظه الله`, W - 70, 52);
+
+            const badgeText = isOff ? "عطلة رسمية" : (inclusions.totalScore ? `الإنجاز العام ${dScore}%` : "تقرير المتابعة والتحصيل");
+            ctx.font = "900 11px Tajawal, sans-serif";
+            const badgeW = Math.max(125, ctx.measureText(badgeText).width + 24);
+            drawRoundedBox(ctx, 22, 22, badgeW, 28, 14, isOff ? "#fef3c7" : "#eef2ff", isOff ? "#fde68a" : "#c7d2fe", 1.5);
+            ctx.fillStyle = isOff ? "#92400e" : "#3730a3";
+            ctx.textAlign = "center";
+            ctx.fillText(badgeText, 22 + badgeW / 2, 40);
+
+            ctx.strokeStyle = "#4338ca";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(22, 65); ctx.lineTo(W - 22, 65); ctx.stroke();
+
+            drawRoundedBox(ctx, 22, 73, W - 44, 28, 8, "#f8fafc", "#e2e8f0", 1);
+            ctx.font = "800 11.5px Tajawal, sans-serif";
+            ctx.fillStyle = "#0f172a";
+            ctx.textAlign = "right";
+            ctx.fillText(`يوم ${d.dayName}${d.isHoliday ? " • عطلة أسبوعية" : ""}`, W - 34, 91);
+            ctx.fillStyle = "#4338ca";
+            ctx.textAlign = "left";
+            ctx.fillText(`${d.hijri}   •   ${d.gregorian}`, 34, 91);
+
+            const startY = 112;
+            const colW = bookChunk.length <= 2 ? (W - 44) : 368;
+            const rowH = 488;
+            const gapX = 14, gapY = 14;
+
+            bookChunk.forEach((b, idx) => {
+                const bk = normalizeBook(d.books ? d.books[b] : null);
+                const cfg = state.booksConfig[b] || { title: `المادة ${b + 1}`, teacher: "المدرس" };
+                const parsedTitle = parseBookTitle(cfg.title);
+                const revCount = (bk.scheduledReviews || []).filter(Boolean).length;
+                const tCfg = teacherStatusConfig[bk.teacherStatus] || teacherStatusConfig.present;
+                const pCfg = partnerStatusConfig[bk.partnerStatus] || partnerStatusConfig.present;
+                const bookOverallScore = calculateBookScore(bk);
+
+                let cx, cy;
+                if (bookChunk.length <= 2) {
+                    cx = 22; cy = startY + idx * (rowH + gapY);
+                } else {
+                    const col = idx % 2;
+                    const row = Math.floor(idx / 2);
+                    cx = col === 0 ? (22 + colW + gapX) : 22;
+                    cy = startY + row * (rowH + gapY);
+                }
+
+                drawRoundedBox(ctx, cx, cy, colW, rowH, 12, "#ffffff", "#cbd5e1", 1.5);
+                const rightEdge = cx + colW - 12, leftEdge = cx + 12, innerW = colW - 24;
+                let curY = cy + 12;
+
+                ctx.textAlign = "right";
+                ctx.font = "900 12.5px Tajawal, sans-serif";
+                ctx.fillStyle = "#1e1b4b";
+                ctx.fillText("● " + fitArabicText(ctx, parsedTitle.main, innerW - 115), rightEdge, curY + 13);
+
+                let badgeLeftX = leftEdge;
+                if (inclusions.totalScore) {
+                    const scoreTxt = `التقييم الكلي ${bookOverallScore}%`;
+                    ctx.font = "900 9px Tajawal, sans-serif";
+                    const sw = ctx.measureText(scoreTxt).width + 12;
+                    drawRoundedBox(ctx, badgeLeftX, curY, sw, 19, 5, "#ecfdf5", "#a7f3d0", 1);
+                    ctx.fillStyle = "#047857";
+                    ctx.textAlign = "center";
+                    ctx.fillText(scoreTxt, badgeLeftX + sw / 2, curY + 13);
+                    badgeLeftX += sw + 5;
+                }
+                if (parsedTitle.sub) {
+                    ctx.font = "800 9px Tajawal, sans-serif";
+                    const subW = Math.min(110, ctx.measureText(parsedTitle.sub).width + 12);
+                    drawRoundedBox(ctx, badgeLeftX, curY, subW, 19, 5, "#e0e7ff", null);
+                    ctx.fillStyle = "#4338ca";
+                    ctx.textAlign = "center";
+                    ctx.fillText(fitArabicText(ctx, parsedTitle.sub, subW - 8), badgeLeftX + subW / 2, curY + 13);
+                }
+
+                curY += 28;
+                const halfW = (innerW - 6) / 2;
+                drawRoundedBox(ctx, cx + 12 + halfW + 6, curY, halfW, 23, 6, "#f8fafc", "#e2e8f0", 1);
+                ctx.font = "800 9px Tajawal, sans-serif";
+                ctx.fillStyle = tCfg.pdfColor;
+                ctx.textAlign = "right";
+                ctx.fillText(fitArabicText(ctx, `الأستاذ: ${tCfg.pdfText}${bk.lessonTime ? " • " + bk.lessonTime : ""}`, halfW - 10), rightEdge - 5, curY + 15);
+
+                drawRoundedBox(ctx, leftEdge, curY, halfW, 23, 6, "#f8fafc", "#e2e8f0", 1);
+                ctx.fillStyle = pCfg.pdfColor;
+                ctx.fillText(fitArabicText(ctx, `المباحث: ${pCfg.pdfText}${bk.discussTime ? " • " + bk.discussTime : ""}`, halfW - 10), leftEdge + halfW - 5, curY + 15);
+
+                curY += 27;
+                drawRoundedBox(ctx, leftEdge, curY, innerW, 23, 6, "#f0fdf4", "#bbf7d0", 1);
+                ctx.fillStyle = "#166534";
+                ctx.fillText(fitArabicText(ctx, `موضوع الدرس: ${bk.topic ? bk.topic : "تم تدوينه في المقرر"}`, innerW - 12), rightEdge - 6, curY + 15);
+
+                // تطبيق فلتر وموافقة التعويضات في الـ PDF
+                const allComps = bk.compensations || [];
+                let allowedComps = [];
+                if (compFilter === "completed_only") {
+                    allowedComps = allComps.filter(c => c.status === "completed");
+                } else if (compFilter === "all") {
+                    allowedComps = allComps;
+                } else if (compFilter === "individual") {
+                    allowedComps = allComps.filter(c => c.allowInPdf);
+                } // في حالة "none" تبقى المصفوفة فارغة ومحجوبة تماماً
+
+                if (allowedComps.length > 0) {
+                    curY += 26;
+                    const compDoneCount = allowedComps.filter(c => c.status === "completed").length;
+                    const compPendingCount = allowedComps.filter(c => c.status === "pending").length;
+                    const isAllDone = compPendingCount === 0;
+
+                    drawRoundedBox(ctx, leftEdge, curY, innerW, 22, 6, isAllDone ? "#ecfdf5" : "#fffbeb", isAllDone ? "#a7f3d0" : "#fde68a", 1);
+                    ctx.font = "800 8.5px Tajawal, sans-serif";
+                    ctx.fillStyle = isAllDone ? "#065f46" : "#92400e";
+
+                    let compSummaryText = "";
+                    if (isAllDone) {
+                        compSummaryText = `سجل الاستدراك: تم تعويض الفائت بالكامل (${compDoneCount} بند معوّض ✓)`;
+                    } else {
+                        compSummaryText = `سجل الاستدراك: ${compDoneCount} خاتم • ${compPendingCount} قيد التعويض`;
+                    }
+                    ctx.fillText(fitArabicText(ctx, compSummaryText, innerW - 12), rightEdge - 6, curY + 14);
+                }
+
+                // الواجبات الأساسية والإضافية المصرح بها للأستاذ
+                const tasksToDraw = [];
+                if (inclusions.prep) tasksToDraw.push({ label: "التحضير قبل الدرس", done: bk.prep, score: bk.prepScore });
+                if (inclusions.attend) tasksToDraw.push({ label: "حضور الدرس عند الأستاذ", done: bk.attend, score: bk.attendScore });
+                if (inclusions.discuss) tasksToDraw.push({ label: "مباحثة الدرس وتثبيته", done: bk.discuss, score: bk.discussScore });
+                if (inclusions.summary) tasksToDraw.push({ label: "تقرير الدرس وتدوينه", done: bk.summary, score: bk.summaryScore });
+
+                if (inclusions.customTasks && bk.customTasks) {
+                    bk.customTasks.forEach(ct => {
+                        tasksToDraw.push({ label: ct.label, done: ct.done, score: ct.score });
+                    });
+                }
+
+                tasksToDraw.slice(0, 5).forEach(tsk => {
+                    curY += 26;
+                    drawRoundedBox(ctx, leftEdge, curY, innerW, 23, 6, tsk.done ? "#f0fdf4" : "#f8fafc", tsk.done ? "#86efac" : "#e2e8f0", 1);
+                    ctx.font = "bold 9px Tajawal, sans-serif";
+                    ctx.fillStyle = "#0f172a";
+                    ctx.textAlign = "right";
+                    ctx.fillText(`${tsk.done ? "✓" : "☐"}  ${tsk.label}`, rightEdge - 7, curY + 15);
+
+                    ctx.font = "800 9px Tajawal, sans-serif";
+                    ctx.textAlign = "left";
+                    if (inclusions.scores && tsk.score !== "") {
+                        ctx.fillStyle = "#047857";
+                        ctx.fillText(`${tsk.score}%`, leftEdge + 8, curY + 15);
+                    } else {
+                        ctx.fillStyle = tsk.done ? "#16a34a" : "#94a3b8";
+                        ctx.fillText(tsk.done ? "منجز ✓" : "غير مؤشر", leftEdge + 8, curY + 15);
+                    }
+                });
+
+                // المراجعة المقررة
+                if (inclusions.reviews) {
+                    curY += 28;
+                    ctx.font = "800 9px Tajawal, sans-serif";
+                    ctx.fillStyle = "#334155";
+                    ctx.textAlign = "right";
+                    ctx.fillText("المرحلة الأولى • المراجعة المقررة", rightEdge, curY + 10);
+
+                    drawRoundedBox(ctx, leftEdge, curY, 62, 16, 4, "#e0e7ff", null);
+                    ctx.fillStyle = "#4338ca";
+                    ctx.textAlign = "center";
+                    ctx.fillText(`${revCount} من 5 منجزة`, leftEdge + 31, curY + 11);
+
+                    curY += 18;
+                    const segW = (innerW - 16) / 5;
+                    for (let ri = 0; ri < 5; ri++) {
+                        const sx = rightEdge - (ri + 1) * segW - ri * 4;
+                        drawRoundedBox(ctx, sx, curY, segW, 7, 3, bk.scheduledReviews[ri] ? "#10b981" : "#e2e8f0", null);
+                    }
+                }
+
+                // مراحل الترسيخ إن وافق الطالب
+                if (inclusions.retention) {
+                    curY += 19;
+                    const rStage = normalizeRetention(state.retentionStages[b]);
+                    const secCompletedDays = rStage.secondary.filter(dayArr => dayArr.filter(Boolean).length === 5).length;
+                    drawRoundedBox(ctx, leftEdge, curY, innerW, 20, 5, "#faf5ff", "#d8b4fe", 1);
+                    ctx.font = "bold 8px Tajawal, sans-serif";
+                    ctx.fillStyle = "#6b21a8";
+                    ctx.textAlign = "right";
+                    ctx.fillText(`الترسيخ: أولي ${rStage.initial.filter(Boolean).length}/4 • ثانوي ${secCompletedDays}/5 • متباعد1 ${rStage.spaced1.filter(Boolean).length}/5 • متباعد2 ${rStage.spaced2.filter(Boolean).length}/5`, rightEdge - 6, curY + 13);
+                }
+
+                // زر الـ PDF التفاعلي المباشر لتحميل تقرير الدرس
+                if (inclusions.summary && bk.reportUrl && bk.reportUrl.trim() !== "") {
+                    curY += 24;
+                    let cleanUrl = bk.reportUrl.trim();
+                    if (!/^https?:\/\//i.test(cleanUrl)) cleanUrl = "https://" + cleanUrl;
+
+                    drawRoundedBox(ctx, leftEdge, curY, innerW, 23, 6, "#eef2ff", "#4338ca", 1.2);
+                    ctx.font = "900 10px Tajawal, sans-serif";
+                    ctx.fillStyle = "#3730a3";
+                    ctx.textAlign = "center";
+                    ctx.fillText("📎 اضغط هنا لتنزيل تقرير الدرس المرفوع", leftEdge + innerW / 2, curY + 15);
+
+                    pdfLinks.push({
+                        url: cleanUrl,
+                        x: leftEdge * (210 / W),
+                        y: curY * (297 / H),
+                        w: innerW * (210 / W),
+                        h: 23 * (297 / H)
+                    });
+                }
+
+                // ملاحظات الدرس
+                if (inclusions.notes) {
+                    curY += 25;
+                    drawRoundedBox(ctx, leftEdge, curY, innerW, 22, 5, "#f8fafc", "#e2e8f0", 1);
+                    ctx.font = "bold 8.5px Tajawal, sans-serif";
+                    ctx.fillStyle = "#475569";
+                    ctx.textAlign = "right";
+                    ctx.fillText(fitArabicText(ctx, `ملاحظات: ${bk.notes ? bk.notes : "لا توجد ملاحظات إضافية"}`, innerW - 12), rightEdge - 6, curY + 14);
+                }
+            });
+
+            canvas.pdfLinks = pdfLinks;
+            return canvas;
+        }
+
+        // ================== دالة توليد وتنزيل PDF A4 الشاملة ==================
+        window.generateAndDownloadPDF = async function() {
+            const scopeEl = document.querySelector('input[name="reportScope"]:checked');
+            const scope = scopeEl ? scopeEl.value : "day";
+
+            // قراءة موافقة الطالب على التعويضات المعروضة للأستاذ
+            const compFilterEl = document.querySelector('input[name="pdfCompFilter"]:checked');
+            const compFilter = compFilterEl ? compFilterEl.value : "none";
+
+            // قراءة موافقة الطالب الدقيقة لمحتويات الـ PDF
+            const inclusions = {
+                prep: document.getElementById("pdf_inc_prep") ? document.getElementById("pdf_inc_prep").checked : true,
+                attend: document.getElementById("pdf_inc_attend") ? document.getElementById("pdf_inc_attend").checked : true,
+                discuss: document.getElementById("pdf_inc_discuss") ? document.getElementById("pdf_inc_discuss").checked : true,
+                summary: document.getElementById("pdf_inc_summary") ? document.getElementById("pdf_inc_summary").checked : true,
+                customTasks: document.getElementById("pdf_inc_custom_tasks") ? document.getElementById("pdf_inc_custom_tasks").checked : true,
+                reviews: document.getElementById("pdf_inc_reviews") ? document.getElementById("pdf_inc_reviews").checked : true,
+                retention: document.getElementById("pdf_inc_retention") ? document.getElementById("pdf_inc_retention").checked : false,
+                notes: document.getElementById("pdf_inc_notes") ? document.getElementById("pdf_inc_notes").checked : true,
+                scores: document.getElementById("pdf_inc_scores") ? document.getElementById("pdf_inc_scores").checked : false,
+                totalScore: document.getElementById("pdf_inc_total_score") ? document.getElementById("pdf_inc_total_score").checked : false
+            };
+
+            let list = [];
+            const curW = getCurrentWeek();
+            if (scope === "day") list.push(getCurrentDay());
+            else if (scope === "week" && curW) list = [...curW.days];
+            else if (scope === "month") state.weeks.slice(-4).forEach(w => list.push(...w.days));
+            else {
+                document.querySelectorAll('input[name="cDay"]:checked').forEach(c => {
+                    if (curW && curW.days) list.push(curW.days[parseInt(c.value)]);
+                });
+                if (list.length === 0) { alert("يرجى تحديد يوم واحد على الأقل."); return; }
+            }
+
+            try {
+                if (document.fonts && document.fonts.ready) await document.fonts.ready;
+                const JsPDFClass = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+                const fileName = `تقرير_المتابعة_الحوزوية_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+                if (JsPDFClass) {
+                    const pdf = new JsPDFClass({ orientation: "portrait", unit: "mm", format: "a4" });
+                    let firstPage = true;
+
+                    list.forEach(d => {
+                        if (!d) return;
+                        const activeIndices = [];
+                        for (let b = 0; b < state.booksConfig.length; b++) {
+                            const bk = normalizeBook(d.books ? d.books[b] : null);
+                            if (!bk.isBookCompleted) activeIndices.push(b);
+                        }
+                        if (activeIndices.length === 0) activeIndices.push(0);
+
+                        for (let i = 0; i < activeIndices.length; i += 4) {
+                            const chunk = activeIndices.slice(i, i + 4);
+                            if (!firstPage) pdf.addPage();
+                            firstPage = false;
+                            const cnv = renderDayToCanvas(d, chunk, inclusions, compFilter);
+                            pdf.addImage(cnv.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 297);
+
+                            // تفعيل النقر المباشر على الروابط في الـ PDF
+                            if (cnv.pdfLinks && Array.isArray(cnv.pdfLinks)) {
+                                cnv.pdfLinks.forEach(lnk => {
+                                    pdf.link(lnk.x, lnk.y, lnk.w, lnk.h, { url: lnk.url });
+                                });
+                            }
+                        }
+                    });
+                    pdf.save(fileName);
+                    closeExportModal();
+                } else {
+                    const activeIndices = [];
+                    const d0 = list[0];
+                    for (let b = 0; b < state.booksConfig.length; b++) {
+                        const bk = normalizeBook(d0.books ? d0.books[b] : null);
+                        if (!bk.isBookCompleted) activeIndices.push(b);
+                    }
+                    const cnv = renderDayToCanvas(d0, activeIndices.slice(0, 4), inclusions, compFilter);
+                    await html2pdf().set({
+                        margin: 0,
+                        filename: fileName,
+                        image: { type: "jpeg", quality: 0.96 },
+                        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+                    }).from(cnv, "canvas").save();
+                    closeExportModal();
+                }
+            } catch (err) {
+                alert("حدث خطأ أثناء إخراج الـ PDF: " + err.message);
+            }
+        };
+
+        // ================== بدء التشغيل الفوري والآمن للتطبيق ==================
+        loadLocalData();
+        renderAccountsPicker();
+        renderApp();
+    </script>
+</body>
+</html>
